@@ -1,0 +1,54 @@
+// styles/base.scss
+
+// Variables
+$color-primary: #2563eb;
+$color-secondary: #7c3aed;
+$color-bg-primary: #f8fafc;
+$color-bg-secondary: #e2e8f0;
+$color-gray-dark: #1f2937;
+$color-gray: #64748b;
+$color-white: #ffffff;
+
+// Mixins
+@mixin container {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+}
+
+@mixin button-primary {
+  background: linear-gradient(to right, $color-primary, $color-secondary);
+  color: $color-white;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+  }
+}
+
+@mixin button-secondary {
+  background: transparent;
+  color: $color-gray-dark;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  border: 2px solid $color-gray-dark;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: $color-gray-dark;
+    color: $color-white;
+  }
+}
