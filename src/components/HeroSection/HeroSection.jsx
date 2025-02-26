@@ -2,6 +2,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import './HeroSection.scss';
+import img from "../../img/una notebook más de cerca o un operación realizando una instalación de Starlink (1).png"
 
 const HeroSection = () => {
   return (
@@ -37,7 +38,7 @@ const HeroSection = () => {
         </div>
         <div className="hero__image-container">
           <img 
-            src="/api/placeholder/600/800" 
+            src={img} 
             alt="Tech Innovation" 
             className="hero__image hero__image--main" 
           />

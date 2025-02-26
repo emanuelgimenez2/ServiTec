@@ -5,6 +5,7 @@ import HeroSection from './components/HeroSection/HeroSection';
 import './App.scss';
 import ServicesSection from './components/ServicesSection/ServicesSection';
 import TestimonialsSection from './components/TestimonialsSection/TestimonialsSection';
+import Footer from './components/Footer/Footer';
 
 const App = () => {
   return (
@@ -14,6 +15,7 @@ const App = () => {
         <HeroSection />
         <ServicesSection/>
         <TestimonialsSection/>
+        <Footer />
       </main>
     </div>
   );

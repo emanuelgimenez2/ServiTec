@@ -28,7 +28,7 @@ const TestimonialsSection = () => {
   ];
 
   return (
-    <section className="testimonials-section">
+    <section className="testimonials-section" id="testimonials">
       <div className="container">
         <h2>Lo que dicen nuestros clientes</h2>
         <p className="section-subtitle">Descubre por qué las empresas confían en nosotros</p>

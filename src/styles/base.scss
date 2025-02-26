@@ -1,6 +1,4 @@
-// styles/base.scss
-
-// Variables
+// styles/_variables.scss
 $color-primary: #2563eb;
 $color-secondary: #7c3aed;
 $color-bg-primary: #f8fafc;
@@ -9,7 +7,7 @@ $color-gray-dark: #1f2937;
 $color-gray: #64748b;
 $color-white: #ffffff;
 
-// Mixins
+// styles/_mixins.scss
 @mixin container {
   max-width: 1400px;
   margin: 0 auto;
