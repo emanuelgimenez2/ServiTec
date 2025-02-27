@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { Star, Menu, X } from "lucide-react";
 import "./Navbar.scss";
-import logo from "../../img/logof.png"; 
+import logo from "../../img/logo2.png"; 
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -23,7 +23,7 @@ const Navbar = () => {
           aria-label="Toggle menu"
         >
           {isMenuOpen ? (
-            <X size={24} className="navbar__menu-icon" />
+            <X size={10} className="navbar__menu-icon" />
           ) : (
             <Menu size={24} className="navbar__menu-icon" />
           )}
