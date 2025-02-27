@@ -23,18 +23,8 @@ const ServicesSection = () => {
       description: "Internet satelital de alta velocidad para zonas urbanas y rurales.",
       features: ["Alta velocidad", "Baja latencia", "Cobertura global"]
     },
-    {
-      icon: <Shield />,
-      title: "Seguridad Digital",
-      description: "Protección integral para tus equipos y datos empresariales.",
-      features: ["Antivirus empresarial", "Backup en la nube", "Firewall dedicado"]
-    },
-    {
-      icon: <Cloud />,
-      title: "Servicios Cloud",
-      description: "Soluciones en la nube para optimizar tus operaciones diarias.",
-      features: ["Almacenamiento", "Servidores virtuales", "Backup automático"]
-    },
+    
+   
     {
       icon: <Terminal />,
       title: "Soporte Técnico",

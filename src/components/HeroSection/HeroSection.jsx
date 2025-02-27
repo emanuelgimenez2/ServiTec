@@ -1,10 +1,21 @@
 // components/HeroSection/HeroSection.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import './HeroSection.scss';
-import img from "../../img/una notebook más de cerca o un operación realizando una instalación de Starlink (1).png"
+import img from "../../img/una notebook más de cerca o un operación realizando una instalación de Starlink (1).png";
+import UnderDevelopment from '../UnderDevelopment/UnderDevelopment';
 
 const HeroSection = () => {
+  const [showDevelopmentModal, setShowDevelopmentModal] = useState(false);
+
+  const handleShowProducts = () => {
+    setShowDevelopmentModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowDevelopmentModal(false);
+  };
+
   return (
     <section className="hero">
       <div className="hero__container">
@@ -18,11 +29,11 @@ const HeroSection = () => {
             Desde hardware hasta conectividad Starlink.
           </p>
           <div className="hero__cta-group">
-            <button className="hero__cta-primary">
-              Comenzar Ahora <ArrowRight className="hero__cta-icon" />
-            </button>
-            <button className="hero__cta-secondary">
-              Ver Demo
+            <button 
+              className="hero__cta-primary"
+              onClick={handleShowProducts}
+            >
+              Ver nuestros Productos <ArrowRight className="hero__cta-icon" />
             </button>
           </div>
           <div className="hero__stats">
@@ -49,6 +60,12 @@ const HeroSection = () => {
           />
         </div>
       </div>
+
+      {/* Modal de "En Desarrollo" */}
+      <UnderDevelopment 
+        isOpen={showDevelopmentModal} 
+        onClose={handleCloseModal} 
+      />
     </section>
   );
 };
