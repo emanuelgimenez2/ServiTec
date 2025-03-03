@@ -6,25 +6,26 @@ const TestimonialsSection = () => {
   const testimonials = [
     {
       id: 1,
-      name: "María García",
-      position: "CEO, TechStart",
-      content: "Un servicio excepcional que transformó completamente nuestra presencia digital.",
-      image: "/api/placeholder/64/64"
-    },
-    {
-      id: 2,
-      name: "Carlos Rodríguez",
-      position: "Director de Marketing, InnovateSoft",
-      content: "La mejor decisión que tomamos fue trabajar con este equipo. Los resultados hablan por sí solos.",
-      image: "/api/placeholder/64/64"
+      name: "Lucia",
+      position: "Cliente",
+      content: "Muy buena atención.",
+      image: "https://lh3.googleusercontent.com/a-/ALV-UjXHMHmVDU940KdoNu4pTySQHPx4C4jkdW3OqGhrCu6pJopxhpI=w60-h60-p-rp-mo-br100"
     },
     {
       id: 3,
-      name: "Laura Martínez",
-      position: "Fundadora, DigitalCraft",
-      content: "Profesionalismo y creatividad en cada proyecto. Superaron todas nuestras expectativas.",
-      image: "/api/placeholder/64/64"
-    }
+      name: "angel colombo",
+      position: "Propietario del Mangrullo",
+      content: "Muy buen trabajo de los chicos, colocaron una antena Starlink mini en mi complejo “El Mangrullo“ en Federacion El servicio original no era de buena calidad. Desde que instalamos starlink, no sólo tenemos señal continua, sin interrupciones, sino que, además, se amplió muchísimo el ancho de banda.",
+      image: "https://lh3.googleusercontent.com/a-/ALV-UjWd4s058y-fJaEqoltMIZZ3mso7BFQ7G3pLZgjUpoafYIBUQPFuVA=w60-h60-p-rp-mo-ba4-br100"
+    },
+    {
+      id: 2,
+      name: "Luciono Ojeda",
+      position: "Cliente",
+      content: "muy buena atención la de los chicos , saben explicarte hasta el mínimo detalle 💯",
+      image: "https://lh3.googleusercontent.com/a-/ALV-UjWHxdSG8-7dFZlLS3P-ZFpNPB7coIuPrPUnNEvYdBjhsY0rYfs=w60-h60-p-rp-mo-br100"
+    },
+   
   ];
 
   return (
@@ -42,7 +43,7 @@ const TestimonialsSection = () => {
               <div className="testimonial-author">
                 <img 
                   src={testimonial.image} 
-                  alt={testimonial.name} 
+                  alt={testimonial.name && testimonial.name} 
                   className="author-image"
                 />
                 <div className="author-info">

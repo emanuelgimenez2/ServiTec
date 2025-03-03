@@ -1,22 +1,25 @@
 // components/Navbar/Navbar.jsx
-
-// components/Navbar/Navbar.jsx
 import React, { useState } from "react";
 import { Star, Menu, X } from "lucide-react";
 import "./Navbar.scss";
 import logo from "../../img/logo2.png"; 
+import ContactForm from "../ContactForm/ContactForm";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+
+  const handleContactClick = () => {
+    setIsContactModalOpen(true);
+    setIsMenuOpen(false); // Cierra el menú móvil si está abierto
+  };
 
   return (
     <nav className="navbar">
       <div className="navbar__container">
         
-          <img src={logo } alt="Logo" className="navbar__icon" />
+        <img src={logo} alt="Logo" className="navbar__icon" />
         
-    
-
         <button
           className="navbar__mobile-toggle"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -41,9 +44,16 @@ const Navbar = () => {
           <a href="#testimonials" className="navbar__link">
             Testimonios
           </a>
-          <button className="navbar__cta">Contactar</button>
+          <button className="navbar__cta" onClick={handleContactClick}>
+            Contactar
+          </button>
         </div>
       </div>
+
+      {/* Modal de Contacto */}
+      {isContactModalOpen && (
+        <ContactForm onClose={() => setIsContactModalOpen(false)} />
+      )}
     </nav>
   );
 };

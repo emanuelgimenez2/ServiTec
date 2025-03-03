@@ -1,6 +1,7 @@
 // src/components/Footer/Footer.jsx
 import React, { useState } from 'react';
 import './Footer.scss';
+import logo from  "../../img/logoblanco.png"
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ const Footer = () => {
     <footer className="footer">
       <div className="footer-content">
         <div className="footer-section company-info">
-          <h3>TuEmpresa</h3>
+        <img src={logo } alt="Logo" className="footer-icon" />
           <p>Transformando ideas en soluciones digitales innovadoras.</p>
           <div className="social-links">
             <a href="#" className="social-link">LinkedIn</a>

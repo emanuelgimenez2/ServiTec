@@ -6,6 +6,7 @@ import './App.scss';
 import ServicesSection from './components/ServicesSection/ServicesSection';
 import TestimonialsSection from './components/TestimonialsSection/TestimonialsSection';
 import Footer from './components/Footer/Footer';
+import AboutUsSection from './components/AboutUsSection/AboutUsSection';
 
 const App = () => {
   return (
@@ -14,6 +15,7 @@ const App = () => {
       <main className="main">
         <HeroSection />
         <ServicesSection/>
+        <AboutUsSection />
         <TestimonialsSection/>
         <Footer />
       </main>
