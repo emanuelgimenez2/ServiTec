@@ -7,19 +7,10 @@
   // Regla específica para corregir el fondo blanco del bloque services
 .services {
   background-color: transparent !important; // Forzamos que el fondo sea transparente
-  color: white; // Aseguramos que el texto sea blanco
+  // Aseguramos que el texto sea blanco
   
-  h4 {
-    color: white;
-  }
+
   
-  ul li a {
-    color: #ccc;
-    
-    &:hover {
-      color: white;
-    }
-  }
 }
 // Alineación consistente para todos los títulos h4 en el footer
 .footer-section h4 {
@@ -75,7 +66,7 @@
     flex: 1;
     min-width: 200px;
     margin-bottom: 1.5rem;
-    background-color: transparent; // Aseguramos que no haya fondo blanco
+    background-color: transparent  !important; // Aseguramos que no haya fondo blanco
     
     @media (max-width: $breakpoint-md) {
       min-width: 150px;
