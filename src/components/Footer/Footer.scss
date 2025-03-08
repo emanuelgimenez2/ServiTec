@@ -1,183 +1,343 @@
-// src/components/Footer/Footer.scss
+// Footer.scss modificado
 .footer {
-    background: linear-gradient(to bottom, #060707, #1a1a1a);
-    color: #ffffff;
-    padding-top: 4rem;
-    .footer-section.services {
-      background: transparent;
-      border: none;
+  background-color: #333;
+  color: white;
+  padding: 2rem 0 0 0;
+  font-family: Arial, sans-serif;
+  // Regla específica para corregir el fondo blanco del bloque services
+.services {
+  background-color: transparent !important; // Forzamos que el fondo sea transparente
+  color: white; // Aseguramos que el texto sea blanco
+  
+  h4 {
+    color: white;
+  }
+  
+  ul li a {
+    color: #ccc;
+    
+    &:hover {
+      color: white;
     }
-    .footer-section.services ul li a {
-      background: transparent;
+  }
+}
+// Alineación consistente para todos los títulos h4 en el footer
+.footer-section h4 {
+  font-size: 1.2rem;
+  margin-top: 0; // Aseguramos que no haya margen superior
+  margin-bottom: 1rem;
+  position: relative;
+  color: white;
+  line-height: 1.2; // Altura de línea consistente
+  
+  &:after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -5px;
+    width: 30px;
+    height: 2px;
+    background-color: #4a90e2;
+  }
+}
+
+// Corrección específica para el título de services
+.services h4 {
+  margin-top: 0 !important; // Forzamos que no haya margen superior
+  padding-top: 0 !important; // Forzamos que no haya padding superior
+}
+// Clases de depuración (quitar después de solucionar el problema)
+
+
+.links, .services, .newsletter {
+  padding-top: 0; // Aseguramos que no haya padding superior que cause desalineación
+}
+  // Variables
+  $breakpoint-sm: 576px;
+  $breakpoint-md: 768px;
+  $breakpoint-lg: 992px;
+  
+  .footer-content {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    gap: 2rem;
+    
+    @media (max-width: $breakpoint-lg) {
+      flex-direction: column;
     }
-    .footer-icon {
-      width: 5rem;
-      height: 5rem;
+  }
+  
+  // Aseguramos que todos los bloques tengan un estilo consistente
+  .footer-section {
+    flex: 1;
+    min-width: 200px;
+    margin-bottom: 1.5rem;
+    background-color: transparent; // Aseguramos que no haya fondo blanco
+    
+    @media (max-width: $breakpoint-md) {
+      min-width: 150px;
+    }
+    
+    @media (max-width: $breakpoint-sm) {
+      flex-basis: 100%;
+    }
+    
+    h4 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      position: relative;
+      color: white; // Aseguramos que el título sea visible
       
+      &:after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -5px;
+        width: 30px;
+        height: 2px;
+        background-color: #4a90e2;
+      }
     }
-  
-    .footer-content {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 1rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 3rem;
-      margin-bottom: 3rem;
-    }
-  
-    .footer-section {
-      h3 {
-        font-size: 1.8rem;
-        margin-bottom: 1rem;
-        color: #ffffff;
-      }
-  
-      h4 {
-        font-size: 1.2rem;
-        margin-bottom: 1.5rem;
-        color: #ffffff;
-      }
-  
-      p {
-        color: #b3b3b3;
-        line-height: 1.6;
-        margin-bottom: 1.5rem;
-      }
-  
-      .social-links {
-        display: flex;
-        gap: 1rem;
-  
-        .social-link {
-          color: #ffffff;
+    
+    ul {
+      list-style: none;
+      padding: 0;
+      
+      li {
+        margin-bottom: 0.5rem;
+        
+        a {
+          color: #ccc;
           text-decoration: none;
-          transition: color 0.3s ease;
-  
+          transition: color 0.3s;
+          
           &:hover {
-            color: #007bff;
+            color: white;
           }
-        }
-      }
-  
-      ul {
-        list-style: none;
-        padding: 0;
-  
-        li {
-          margin-bottom: 0.8rem;
-  
-          a {
-            color: #b3b3b3;
-            text-decoration: none;
-            transition: color 0.3s ease;
-  
-            &:hover {
-              color: #ffffff;
-            }
-          }
-        }
-      }
-  
-      &.newsletter {
-        .newsletter-form {
-          display: flex;
-          gap: 0.5rem;
-  
-          input {
-            flex: 1;
-            padding: 0.8rem;
-            border: none;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-  
-            &::placeholder {
-              color: #b3b3b3;
-            }
-  
-            &:focus {
-              outline: none;
-              background: rgba(255, 255, 255, 0.15);
-            }
-          }
-  
-          button {
-            padding: 0.8rem 1.5rem;
-            border: none;
-            border-radius: 4px;
-            background: #007bff;
-            color: #ffffff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-  
-            &:hover {
-              background: #0056b3;
-            }
-          }
-        }
-  
-        .success-message {
-          color: #28a745;
-          padding: 0.8rem;
-          background: rgba(40, 167, 69, 0.1);
-          border-radius: 4px;
-        }
-      }
-    }
-  
-    .footer-bottom {
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 2rem 0;
-  
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 1rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
-  
-        p {
-          color: #b3b3b3;
-          margin: 0;
-        }
-  
-        .legal-links {
-          display: flex;
-          gap: 2rem;
-  
-          a {
-            color: #b3b3b3;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-  
-            &:hover {
-              color: #ffffff;
-            }
-          }
-        }
-      }
-    }
-  
-    @media (max-width: 768px) {
-      .footer-content {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-      }
-  
-      .footer-bottom .container {
-        flex-direction: column;
-        text-align: center;
-  
-        .legal-links {
-          flex-direction: column;
-          gap: 1rem;
-          align-items: center;
         }
       }
     }
   }
+  // Añadir al final del archivo Footer.scss
+.footer-credits {
+  text-align: center;
+  padding: 1.5rem 0;
+  background-color: #2a2a2a;
+  border-top: 1px solid #444;
+  
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #bbb;
+  }
+  
+  .heart {
+    color: #e25555;
+    display: inline-block;
+    animation: heartbeat 1.5s infinite;
+  }
+  
+  a {
+    color: #4a90e2;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s;
+    
+    &:hover {
+      color: #62a5f0;
+      text-decoration: underline;
+    }
+  }
+  
+  .credits-contact {
+    font-size: 0.85rem;
+    opacity: 0.85;
+    
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.2); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+}
+
+// Media query para dispositivos móviles
+@media (max-width: 576px) {
+  .footer-credits {
+    padding: 1rem 0;
+    
+    p {
+      font-size: 0.9rem;
+    }
+    
+    .credits-contact {
+      font-size: 0.8rem;
+    }
+  }
+}
+  // Ajustamos la estructura para que los tres bloques de enlaces estén al mismo nivel
+  .company-info {
+    flex-basis: 100%;
+    max-width: 350px;
+    
+    @media (max-width: $breakpoint-lg) {
+      max-width: 100%;
+    }
+    
+    .footer-icon {
+      max-height: 50px;
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+    
+    .social-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      
+      .social-link {
+        color: white;
+        text-decoration: none;
+        transition: opacity 0.3s;
+        
+        &:hover {
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+  
+  // Modificamos esta parte para asegurar que los tres bloques de enlaces estén alineados
+  .links, .services {
+    flex: 1;
+    min-width: 150px;
+    
+    @media (max-width: $breakpoint-sm) {
+      flex-basis: 100%;
+    }
+  }
+  
+  .newsletter {
+    flex-basis: 100%;
+    max-width: 350px;
+    
+    @media (max-width: $breakpoint-lg) {
+      max-width: 100%;
+    }
+    
+    .newsletter-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      
+      input {
+        flex: 1;
+        min-width: 200px;
+        padding: 0.75rem;
+        border: none;
+        border-radius: 4px;
+        outline: none;
+        
+        @media (max-width: $breakpoint-sm) {
+          flex-basis: 100%;
+        }
+      }
+      
+      button {
+        padding: 0.75rem 1.5rem;
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        
+        &:hover {
+          background-color: #357abd;
+        }
+        
+        @media (max-width: $breakpoint-sm) {
+          width: 100%;
+        }
+      }
+    }
+    
+    .success-message {
+      padding: 0.75rem;
+      background-color: rgba(74, 144, 226, 0.2);
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+  }
+  
+  .footer-bottom {
+    background-color: #222;
+    padding: 1rem 0;
+    margin-top: 2rem;
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      
+      @media (max-width: $breakpoint-md) {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      p {
+        margin: 0;
+      }
+      
+      .legal-links {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+        
+        @media (max-width: $breakpoint-sm) {
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        a {
+          color: #ccc;
+          text-decoration: none;
+          font-size: 0.9rem;
+          transition: color 0.3s;
+          
+          &:hover {
+            color: white;
+          }
+        }
+      }
+    }
+  }
+}
