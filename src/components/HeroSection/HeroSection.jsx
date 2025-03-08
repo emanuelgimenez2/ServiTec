@@ -53,11 +53,7 @@ const HeroSection = () => {
             alt="Tech Innovation" 
             className="hero__image hero__image--main" 
           />
-          <img 
-            src="/api/placeholder/300/400" 
-            alt="Tech Detail" 
-            className="hero__image hero__image--floating" 
-          />
+        
         </div>
       </div>
 
