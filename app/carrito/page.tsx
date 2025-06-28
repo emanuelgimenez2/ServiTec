@@ -1,300 +1,368 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { ShoppingCart, Plus, Minus, Trash2, ArrowLeft, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { carritoService } from "@/lib/firebase-services"
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard } from "lucide-react"
+import Link from "next/link"
+import Image from "next/image"
 import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/lib/firebase"
+import { carritoService, type Cart } from "@/lib/firebase-services"
 
 export default function CarritoPage() {
-  const [user, setUser] = useState(null)
-  const [cartItems, setCartItems] = useState([])
-  const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const [cart, setCart] = useState<Cart | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
+  const [updating, setUpdating] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push("/auth")
-        return
-      }
-
-      // const userData = await getUserDocument(user.uid) // Assuming getUserDocument is defined elsewhere
-      // For now, let's assume user data is directly available from auth.currentUser
-      const userData = {
-        id: user.uid,
-        name: user.displayName || "Usuario", // Provide a default name
-        email: user.email || "",
-      }
-
-      if (userData) {
-        setUser(userData)
-        await loadCartItems(userData.id)
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("🔥 Auth state changed in carrito:", user?.email)
+      setUser(user)
+      if (user) {
+        loadUserCart(user.uid)
+      } else {
+        setCart(null)
+        setLoading(false)
       }
     })
 
     return () => unsubscribe()
-  }, [router])
+  }, [])
 
-  const loadCartItems = async (userId) => {
+  const loadUserCart = async (userId: string) => {
     try {
-      let userCart = await carritoService.getUserCart(userId)
-
-      if (!userCart) {
-        userCart = await carritoService.createUserCart(userId)
-      }
-
-      setCartItems(userCart.items || [])
+      setLoading(true)
+      console.log("🛒 Cargando carrito para usuario:", userId)
+      const userCart = await carritoService.getUserCart(userId)
+      console.log("📦 Carrito obtenido:", userCart)
+      setCart(userCart)
     } catch (error) {
       console.error("Error loading cart:", error)
-      setCartItems([])
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el carrito",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
-  const updateCartInCollection = async (newItems) => {
+  const updateQuantity = async (productId: string, newQuantity: number) => {
+    if (!user || !cart) return
+
     try {
-      const userCart = await carritoService.getUserCart(user.id)
-      if (userCart) {
-        await carritoService.updateCart(userCart.id, newItems)
-      }
-
-      // Trigger custom event for navbar update
-      window.dispatchEvent(new CustomEvent("userUpdated"))
-    } catch (error) {
-      console.error("Error updating cart:", error)
-    }
-  }
-
-  const updateQuantity = (productId, newQuantity) => {
-    if (newQuantity <= 0) {
-      removeItem(productId)
-      return
-    }
-
-    const updatedCart = cartItems.map((item) => (item.id === productId ? { ...item, quantity: newQuantity } : item))
-    setCartItems(updatedCart)
-    updateCartInCollection(updatedCart)
-  }
-
-  const removeItem = (productId) => {
-    const updatedCart = cartItems.filter((item) => item.id !== productId)
-    setCartItems(updatedCart)
-    updateCartInCollection(updatedCart)
-
-    toast({
-      title: "Producto eliminado",
-      description: "El producto ha sido eliminado del carrito.",
-    })
-  }
-
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("es-AR", {
-      style: "currency",
-      currency: "ARS",
-      minimumFractionDigits: 0,
-    }).format(price)
-  }
-
-  const getSubtotal = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
-  }
-
-  const getShipping = () => {
-    const subtotal = getSubtotal()
-    return subtotal > 100000 ? 0 : 5000 // Free shipping over $100,000
-  }
-
-  const getTotal = () => {
-    return getSubtotal() + getShipping()
-  }
-
-  const handleCheckout = () => {
-    setLoading(true)
-
-    // Simulate checkout process
-    setTimeout(() => {
-      const order = {
-        id: Date.now().toString(),
-        userId: user.id,
-        customerName: user.name,
-        items: cartItems,
-        subtotal: getSubtotal(),
-        shipping: getShipping(),
-        total: getTotal(),
-        status: "pending",
-        createdAt: new Date().toISOString(),
-      }
-
-      // Save order
-      const orders = JSON.parse(localStorage.getItem("servitec_orders") || "[]")
-      orders.push(order)
-      localStorage.setItem("servitec_orders", JSON.stringify(orders))
-
-      // Clear cart
-      setCartItems([])
-      updateCartInCollection([])
+      setUpdating(productId)
+      console.log("📊 Actualizando cantidad:", { productId, newQuantity })
+      await carritoService.updateQuantity(user.uid, productId, newQuantity)
+      await loadUserCart(user.uid)
 
       toast({
-        title: "¡Pedido realizado!",
-        description: `Tu pedido #${order.id} ha sido procesado exitosamente.`,
+        title: "Cantidad actualizada",
+        description: "El producto se actualizó correctamente",
+      })
+    } catch (error) {
+      console.error("Error updating quantity:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar la cantidad",
+        variant: "destructive",
+      })
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const removeItem = async (productId: string) => {
+    if (!user || !cart) return
+
+    try {
+      setUpdating(productId)
+      console.log("🗑️ Eliminando producto:", productId)
+      await carritoService.removeFromCart(user.uid, productId)
+      await loadUserCart(user.uid)
+
+      toast({
+        title: "Producto eliminado",
+        description: "El producto se eliminó del carrito",
+      })
+    } catch (error) {
+      console.error("Error removing item:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el producto",
+        variant: "destructive",
+      })
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const clearCart = async () => {
+    if (!user) return
+
+    try {
+      console.log("🧹 Limpiando carrito completo")
+      await carritoService.clearCart(user.uid)
+      await loadUserCart(user.uid)
+
+      toast({
+        title: "Carrito vaciado",
+        description: "Todos los productos fueron eliminados",
+      })
+    } catch (error) {
+      console.error("Error clearing cart:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo vaciar el carrito",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleCheckout = async () => {
+    if (!user || !cart) return
+
+    try {
+      console.log("💳 Procesando checkout")
+      await carritoService.completeCart(user.uid)
+
+      toast({
+        title: "¡Compra realizada!",
+        description: "Tu pedido ha sido procesado exitosamente",
       })
 
-      setLoading(false)
-      router.push("/")
-    }, 2000)
+      // Crear nuevo carrito activo
+      await carritoService.createUserCart(user.uid)
+      await loadUserCart(user.uid)
+    } catch (error) {
+      console.error("Error during checkout:", error)
+      toast({
+        title: "Error en la compra",
+        description: "No se pudo procesar el pedido",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center text-white">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+              <p>Cargando carrito...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!user) {
-    return <div>Cargando...</div>
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center mb-8">
-          <Button variant="ghost" onClick={() => router.back()} className="mr-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Carrito de Compras</h1>
-            <p className="text-gray-600">{cartItems.length} productos en tu carrito</p>
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Card className="p-8 text-center bg-white/10 backdrop-blur-md border-white/20">
+              <CardContent className="space-y-4">
+                <ShoppingBag className="h-16 w-16 mx-auto text-white/70" />
+                <h2 className="text-2xl font-bold text-white">Inicia sesión para ver tu carrito</h2>
+                <p className="text-white/70">Necesitas estar autenticado para acceder a tu carrito de compras</p>
+                <Link href="/auth">
+                  <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                    Iniciar Sesión
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
         </div>
+      </div>
+    )
+  }
 
-        {cartItems.length === 0 ? (
-          <div className="text-center py-16">
-            <ShoppingCart className="w-24 h-24 text-gray-300 mx-auto mb-6" />
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Tu carrito está vacío</h2>
-            <p className="text-gray-600 mb-8">Agrega algunos productos para comenzar tu compra</p>
-            <Button onClick={() => router.push("/tienda")}>Ir a la Tienda</Button>
+  if (!cart || cart.items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Card className="p-8 text-center bg-white/10 backdrop-blur-md border-white/20">
+              <CardContent className="space-y-4">
+                <ShoppingBag className="h-16 w-16 mx-auto text-white/70" />
+                <h2 className="text-2xl font-bold text-white">Tu carrito está vacío</h2>
+                <p className="text-white/70">¡Explora nuestra tienda y encuentra productos increíbles!</p>
+                <Link href="/tienda">
+                  <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                    <ShoppingBag className="mr-2 h-4 w-4" />
+                    Ir a la Tienda
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Productos en tu carrito</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                      <div className="relative w-20 h-20 flex-shrink-0">
-                        <Image
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          fill
-                          className="object-cover rounded-md"
-                        />
-                      </div>
+        </div>
+      </div>
+    )
+  }
 
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
-                        <p className="text-sm text-gray-600">{item.category}</p>
-                        <p className="text-lg font-bold text-gray-900">{formatPrice(item.price)}</p>
-                      </div>
+  const subtotal = cart.total
+  const shipping = subtotal > 50000 ? 0 : 5000
+  const total = subtotal + shipping
 
-                      <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => updateQuantity(item.id, item.quantity - 1)}>
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateQuantity(item.id, Number.parseInt(e.target.value) || 1)}
-                          className="w-16 text-center"
-                          min="1"
-                        />
-                        <Button variant="outline" size="sm" onClick={() => updateQuantity(item.id, item.quantity + 1)}>
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-20">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Link href="/tienda">
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Seguir Comprando
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Mi Carrito</h1>
+              <p className="text-white/70">{cart.items.length} productos en tu carrito</p>
+            </div>
+          </div>
 
-                      <div className="text-right">
-                        <p className="font-semibold text-gray-900">{formatPrice(item.price * item.quantity)}</p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeItem(item.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+          {cart.items.length > 0 && (
+            <Button
+              onClick={clearCart}
+              variant="ghost"
+              size="sm"
+              className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Vaciar Carrito
+            </Button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Cart Items */}
+          <div className="lg:col-span-2 space-y-4">
+            {cart.items.map((item) => (
+              <Card
+                key={item.productId}
+                className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/15 transition-all duration-300"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center space-x-4">
+                    <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-white/10">
+                      <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
                     </div>
-                  ))}
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-semibold text-white truncate">{item.name}</h3>
+                      <Badge variant="secondary" className="bg-purple-500/20 text-purple-200 border-purple-500/30">
+                        {item.category}
+                      </Badge>
+                      <p className="text-2xl font-bold text-green-400 mt-2">${item.price.toLocaleString()}</p>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <Button
+                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                        disabled={updating === item.productId || item.quantity <= 1}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-white hover:bg-white/10"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+
+                      <span className="text-white font-semibold min-w-[2rem] text-center">{item.quantity}</span>
+
+                      <Button
+                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                        disabled={updating === item.productId}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-white hover:bg-white/10"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-white">${(item.price * item.quantity).toLocaleString()}</p>
+                      <Button
+                        onClick={() => removeItem(item.productId)}
+                        disabled={updating === item.productId}
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-400 hover:bg-red-500/10 hover:text-red-300 mt-2"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            </div>
+            ))}
+          </div>
 
-            {/* Order Summary */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <CardTitle>Resumen del Pedido</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>{formatPrice(getSubtotal())}</span>
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
+            <Card className="bg-white/10 backdrop-blur-md border-white/20 sticky top-24">
+              <CardContent className="p-6">
+                <h2 className="text-xl font-bold text-white mb-6">Resumen del Pedido</h2>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between text-white">
+                    <span>Subtotal ({cart.items.length} productos)</span>
+                    <span>${subtotal.toLocaleString()}</span>
                   </div>
 
-                  <div className="flex justify-between">
+                  <div className="flex justify-between text-white">
                     <span>Envío</span>
-                    <span>
-                      {getShipping() === 0 ? (
-                        <span className="text-green-600">Gratis</span>
-                      ) : (
-                        formatPrice(getShipping())
-                      )}
+                    <span className={shipping === 0 ? "text-green-400" : ""}>
+                      {shipping === 0 ? "¡GRATIS!" : `$${shipping.toLocaleString()}`}
                     </span>
                   </div>
 
-                  {getShipping() === 0 && (
-                    <p className="text-sm text-green-600">¡Envío gratis por compras superiores a $100.000!</p>
+                  {shipping > 0 && (
+                    <p className="text-sm text-white/70">Envío gratis en compras superiores a $50.000</p>
                   )}
 
-                  <Separator />
+                  <Separator className="bg-white/20" />
 
-                  <div className="flex justify-between text-lg font-semibold">
+                  <div className="flex justify-between text-xl font-bold text-white">
                     <span>Total</span>
-                    <span>{formatPrice(getTotal())}</span>
+                    <span>${total.toLocaleString()}</span>
                   </div>
+                </div>
 
-                  <Button
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-                    onClick={handleCheckout}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      "Procesando..."
-                    ) : (
-                      <>
-                        <CreditCard className="w-4 h-4 mr-2" />
-                        Finalizar Compra
-                      </>
-                    )}
-                  </Button>
+                <Button
+                  onClick={handleCheckout}
+                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3"
+                  size="lg"
+                >
+                  <CreditCard className="mr-2 h-5 w-5" />
+                  Proceder al Pago
+                </Button>
 
-                  <div className="text-xs text-gray-500 text-center">
-                    <p>Métodos de pago disponibles:</p>
-                    <p>Efectivo • Transferencia • Mercado Pago</p>
+                <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                  <div className="flex items-center space-x-2 text-blue-200">
+                    <ShoppingBag className="h-4 w-4" />
+                    <span className="text-sm">Compra 100% segura</span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <p className="text-xs text-blue-200/70 mt-1">Tus datos están protegidos con encriptación SSL</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

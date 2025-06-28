@@ -29,6 +29,7 @@ export default function AdminProducts() {
   const [isAddingProduct, setIsAddingProduct] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [newProduct, setNewProduct] = useState<Partial<Product>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
 
@@ -43,10 +44,12 @@ export default function AdminProducts() {
   const loadProducts = async () => {
     try {
       setLoading(true)
+      console.log("🔄 Cargando productos desde components/admin/products.tsx...")
       const productsData = await productosService.getAllProducts()
+      console.log("📦 Productos cargados:", productsData)
       setProducts(productsData)
     } catch (error) {
-      console.error("Error loading products:", error)
+      console.error("❌ Error loading products:", error)
       toast({
         title: "Error",
         description: "No se pudieron cargar los productos",
@@ -88,51 +91,95 @@ export default function AdminProducts() {
   }
 
   const addProduct = async () => {
-    if (!newProduct.name || !newProduct.price || !newProduct.category) {
+    console.log("��� === INICIANDO CREACIÓN DE PRODUCTO DESDE COMPONENTS ===")
+    console.log("📝 Datos del formulario:", newProduct)
+
+    // Validación de campos requeridos
+    if (!newProduct.name?.trim()) {
+      console.log("❌ Validación fallida: nombre faltante")
       toast({
         title: "Error",
-        description: "Por favor completa todos los campos requeridos",
+        description: "El nombre del producto es requerido",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!newProduct.price || newProduct.price <= 0) {
+      console.log("❌ Validación fallida: precio inválido")
+      toast({
+        title: "Error",
+        description: "El precio debe ser mayor a 0",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!newProduct.category?.trim()) {
+      console.log("❌ Validación fallida: categoría faltante")
+      toast({
+        title: "Error",
+        description: "La categoría es requerida",
         variant: "destructive",
       })
       return
     }
 
     try {
+      setIsSubmitting(true)
+      console.log("🔥 Preparando datos para Firebase...")
+
       const productData = {
-        name: newProduct.name,
-        description: newProduct.description || "",
-        price: newProduct.price,
-        originalPrice: newProduct.price * 1.2, // 20% más como precio original
-        stock: newProduct.stock || 0,
-        category: newProduct.category,
-        brand: newProduct.brand || "Sin especificar",
-        image: newProduct.image || "/placeholder.svg?height=300&width=300",
-        images: [newProduct.image || "/placeholder.svg?height=600&width=600"],
+        name: newProduct.name.trim(),
+        description: newProduct.description?.trim() || "",
+        price: Number(newProduct.price),
+        originalPrice: Number(newProduct.price) * 1.2, // 20% más como precio original
+        stock: Number(newProduct.stock) || 0,
+        category: newProduct.category.trim(),
+        brand: newProduct.brand?.trim() || "Sin especificar",
+        image: newProduct.image?.trim() || "/placeholder.svg?height=300&width=300",
+        images: [newProduct.image?.trim() || "/placeholder.svg?height=600&width=600"],
         rating: 4.5,
         reviews: 0,
         isNew: true,
+        isActive: true,
         specifications: {
-          Marca: newProduct.brand || "Sin especificar",
-          Descripción: newProduct.description || "",
+          Marca: newProduct.brand?.trim() || "Sin especificar",
+          Descripción: newProduct.description?.trim() || "",
         },
       }
 
-      await productosService.createProduct(productData)
-      await loadProducts() // Recargar datos
+      console.log("📦 Datos preparados para Firebase:", productData)
+      console.log("🎯 Usando productosService.createProduct() que escribe en colección 'productos'")
 
+      const productId = await productosService.createProduct(productData)
+      console.log("🎉 ¡PRODUCTO CREADO EXITOSAMENTE! ID:", productId)
+
+      // Recargar productos
+      await loadProducts()
+
+      // Limpiar formulario y cerrar modal
       setNewProduct({})
       setIsAddingProduct(false)
+
       toast({
-        title: "Producto agregado",
-        description: "El producto ha sido agregado exitosamente y está disponible en la tienda",
+        title: "¡Producto agregado!",
+        description: `El producto "${productData.name}" ha sido agregado exitosamente`,
       })
     } catch (error) {
-      console.error("Error adding product:", error)
+      console.error("💥 Error completo al agregar producto:", error)
+      console.error("🔍 Detalles del error:", {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+      })
       toast({
         title: "Error",
-        description: "No se pudo agregar el producto",
+        description: `No se pudo agregar el producto: ${error instanceof Error ? error.message : "Error desconocido"}`,
         variant: "destructive",
       })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -140,6 +187,7 @@ export default function AdminProducts() {
     if (!editingProduct) return
 
     try {
+      console.log("🔄 Actualizando producto:", editingProduct.id)
       await productosService.updateProduct(editingProduct.id!, editingProduct)
       await loadProducts()
 
@@ -149,7 +197,7 @@ export default function AdminProducts() {
         description: "El producto ha sido actualizado exitosamente",
       })
     } catch (error) {
-      console.error("Error updating product:", error)
+      console.error("❌ Error updating product:", error)
       toast({
         title: "Error",
         description: "No se pudo actualizar el producto",
@@ -160,6 +208,7 @@ export default function AdminProducts() {
 
   const deleteProduct = async (productId: string) => {
     try {
+      console.log("🗑️ Eliminando producto:", productId)
       await productosService.deleteProduct(productId)
       await loadProducts()
 
@@ -168,7 +217,7 @@ export default function AdminProducts() {
         description: "El producto ha sido eliminado exitosamente",
       })
     } catch (error) {
-      console.error("Error deleting product:", error)
+      console.error("❌ Error deleting product:", error)
       toast({
         title: "Error",
         description: "No se pudo eliminar el producto",
@@ -182,6 +231,7 @@ export default function AdminProducts() {
       const product = products.find((p) => p.id === productId)
       const newStatus = !product?.isActive
 
+      console.log("🔄 Cambiando estado del producto:", productId, "a", newStatus)
       await productosService.toggleProductStatus(productId, newStatus)
       await loadProducts()
 
@@ -190,7 +240,7 @@ export default function AdminProducts() {
         description: `Producto ${newStatus ? "activado" : "desactivado"}`,
       })
     } catch (error) {
-      console.error("Error toggling product status:", error)
+      console.error("❌ Error toggling product status:", error)
       toast({
         title: "Error",
         description: "No se pudo actualizar el estado del producto",
@@ -213,7 +263,7 @@ export default function AdminProducts() {
     return (
       <div className="space-y-6">
         <div className="text-center py-8">
-          <p>Cargando productos...</p>
+          <p className="text-white/70">Cargando productos...</p>
         </div>
       </div>
     )
@@ -223,10 +273,8 @@ export default function AdminProducts() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Productos
-          </h2>
-          <p className="text-muted-foreground">Gestión del inventario de productos</p>
+          <h2 className="text-3xl font-bold tracking-tight text-white">Productos</h2>
+          <p className="text-white/70">Gestión del inventario de productos</p>
         </div>
         <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
           <DialogTrigger asChild>
@@ -238,7 +286,7 @@ export default function AdminProducts() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Agregar Nuevo Producto</DialogTitle>
-              <DialogDescription>Completa la información del producto</DialogDescription>
+              <DialogDescription>Completa la información del producto para agregarlo al inventario</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -295,6 +343,8 @@ export default function AdminProducts() {
                   <Input
                     type="number"
                     placeholder="0"
+                    min="0"
+                    step="0.01"
                     value={newProduct.price || ""}
                     onChange={(e) => setNewProduct({ ...newProduct, price: Number.parseFloat(e.target.value) || 0 })}
                   />
@@ -304,6 +354,7 @@ export default function AdminProducts() {
                   <Input
                     type="number"
                     placeholder="0"
+                    min="0"
                     value={newProduct.stock || ""}
                     onChange={(e) => setNewProduct({ ...newProduct, stock: Number.parseInt(e.target.value) || 0 })}
                   />
@@ -320,10 +371,24 @@ export default function AdminProducts() {
               </div>
 
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddingProduct(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddingProduct(false)
+                    setNewProduct({})
+                  }}
+                  disabled={isSubmitting}
+                >
                   Cancelar
                 </Button>
-                <Button onClick={addProduct}>Agregar Producto</Button>
+                <Button
+                  onClick={addProduct}
+                  disabled={
+                    isSubmitting || !newProduct.name?.trim() || !newProduct.price || !newProduct.category?.trim()
+                  }
+                >
+                  {isSubmitting ? "Agregando..." : "Agregar Producto"}
+                </Button>
               </div>
             </div>
           </DialogContent>
@@ -332,88 +397,91 @@ export default function AdminProducts() {
 
       {/* Estadísticas */}
       <div className="grid gap-4 md:grid-cols-5">
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-sm font-medium text-white/70">Total</p>
+                <p className="text-2xl font-bold text-white">{stats.total}</p>
               </div>
-              <Package className="h-8 w-8 text-blue-500" />
+              <Package className="h-8 w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Activos</p>
-                <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+                <p className="text-sm font-medium text-white/70">Activos</p>
+                <p className="text-2xl font-bold text-green-400">{stats.active}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Inactivos</p>
-                <p className="text-2xl font-bold text-red-600">{stats.inactive}</p>
+                <p className="text-sm font-medium text-white/70">Inactivos</p>
+                <p className="text-2xl font-bold text-red-400">{stats.inactive}</p>
               </div>
-              <Package className="h-8 w-8 text-red-500" />
+              <Package className="h-8 w-8 text-red-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Stock Bajo</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.lowStock}</p>
+                <p className="text-sm font-medium text-white/70">Stock Bajo</p>
+                <p className="text-2xl font-bold text-orange-400">{stats.lowStock}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-orange-500" />
+              <AlertTriangle className="h-8 w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Valor Total</p>
-                <p className="text-xl font-bold text-purple-600">${stats.totalValue.toLocaleString()}</p>
+                <p className="text-sm font-medium text-white/70">Valor Total</p>
+                <p className="text-xl font-bold text-purple-400">${stats.totalValue.toLocaleString()}</p>
               </div>
-              <Package className="h-8 w-8 text-purple-500" />
+              <Package className="h-8 w-8 text-purple-400" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filtros */}
-      <Card>
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle className="text-white">Filtros</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="search">Buscar</Label>
+              <Label htmlFor="search" className="text-white/90">
+                Buscar
+              </Label>
               <Input
                 id="search"
                 placeholder="Nombre, descripción, categoría..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Categoría</Label>
+              <Label className="text-white/90">Categoría</Label>
               <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Todas las categorías" />
                 </SelectTrigger>
                 <SelectContent>
@@ -428,9 +496,9 @@ export default function AdminProducts() {
             </div>
 
             <div className="space-y-2">
-              <Label>Estado</Label>
+              <Label className="text-white/90">Estado</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Todos los estados" />
                 </SelectTrigger>
                 <SelectContent>
@@ -446,20 +514,24 @@ export default function AdminProducts() {
       </Card>
 
       {/* Lista de productos */}
-      <Card>
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
-          <CardTitle>Productos ({filteredProducts.length})</CardTitle>
+          <CardTitle className="text-white">Productos ({filteredProducts.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredProducts.length === 0 ? (
-              <div className="col-span-full text-center py-8 text-muted-foreground">
+              <div className="col-span-full text-center py-8 text-white/70">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No se encontraron productos con los filtros aplicados</p>
+                <Button onClick={() => setIsAddingProduct(true)} className="mt-4" variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar primer producto
+                </Button>
               </div>
             ) : (
               filteredProducts.map((product) => (
-                <Card key={product.id} className="hover:shadow-md transition-shadow">
+                <Card key={product.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
                   <CardContent className="p-4">
                     <div className="space-y-3">
                       <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-100">
@@ -472,7 +544,7 @@ export default function AdminProducts() {
 
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
-                          <h3 className="font-semibold text-lg line-clamp-1">{product.name}</h3>
+                          <h3 className="font-semibold text-lg line-clamp-1 text-white">{product.name}</h3>
                           <div className="flex gap-1">
                             <Badge variant={product.isActive ? "default" : "secondary"}>
                               {product.isActive ? "Activo" : "Inactivo"}
@@ -486,16 +558,18 @@ export default function AdminProducts() {
                           </div>
                         </div>
 
-                        <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
+                        <p className="text-sm text-white/70 line-clamp-2">{product.description}</p>
 
                         <div className="flex items-center justify-between">
-                          <Badge variant="outline">{product.category}</Badge>
-                          <span className="text-lg font-bold text-green-600">${product.price.toLocaleString()}</span>
+                          <Badge variant="outline" className="text-white/80 border-white/30">
+                            {product.category}
+                          </Badge>
+                          <span className="text-lg font-bold text-green-400">${product.price.toLocaleString()}</span>
                         </div>
 
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Stock: {product.stock}</span>
-                          <span className="text-muted-foreground">
+                          <span className="text-white/70">Stock: {product.stock}</span>
+                          <span className="text-white/70">
                             {new Date(product.createdAt).toLocaleDateString("es-AR")}
                           </span>
                         </div>
@@ -507,7 +581,7 @@ export default function AdminProducts() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 bg-transparent"
+                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20"
                               onClick={() => setEditingProduct(product)}
                             >
                               <Edit className="h-4 w-4 mr-1" />

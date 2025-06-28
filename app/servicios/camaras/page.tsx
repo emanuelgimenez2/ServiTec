@@ -21,11 +21,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default function CamarasPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 pt-16">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900 text-white">
         <div className="absolute inset-0 bg-[url('/placeholder.svg?height=600&width=1200')] opacity-10" />
-        <div className="relative container mx-auto px-3 sm:px-4 lg:px-8 py-8 sm:py-12 lg:py-20">
+        <div className="relative container mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8 lg:py-16">
           <div className="max-w-4xl mx-auto text-center">
             <div className="flex justify-center mb-4 sm:mb-6">
               <div className="bg-white/10 backdrop-blur-sm rounded-full p-3 sm:p-4">

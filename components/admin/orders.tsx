@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { ShoppingCart, Package, Truck, CheckCircle, XCircle, Clock, DollarSign, User } from "lucide-react"
+import { ShoppingCart, Package, Truck, CheckCircle, XCircle, Clock, DollarSign, User, Edit, Trash2 } from "lucide-react"
 
 interface OrderItem {
   id: string
@@ -47,6 +47,7 @@ export default function AdminOrders() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -92,6 +93,31 @@ export default function AdminOrders() {
     toast({
       title: "Estado actualizado",
       description: `Pedido ${newStatus === "processing" ? "en proceso" : newStatus === "shipped" ? "enviado" : newStatus === "delivered" ? "entregado" : "cancelado"}`,
+    })
+  }
+
+  const updateOrder = () => {
+    if (!editingOrder) return
+
+    const updatedOrders = orders.map((order) => (order.id === editingOrder.id ? editingOrder : order))
+    setOrders(updatedOrders)
+    localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
+
+    setEditingOrder(null)
+    toast({
+      title: "Pedido actualizado",
+      description: "El pedido ha sido actualizado exitosamente",
+    })
+  }
+
+  const deleteOrder = (orderId: string) => {
+    const updatedOrders = orders.filter((order) => order.id !== orderId)
+    setOrders(updatedOrders)
+    localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
+
+    toast({
+      title: "Pedido eliminado",
+      description: "El pedido ha sido eliminado exitosamente",
     })
   }
 
@@ -151,109 +177,110 @@ export default function AdminOrders() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Pedidos
-          </h2>
-          <p className="text-muted-foreground">Gestión de órdenes de compra de la tienda</p>
+          <h2 className="text-3xl font-bold tracking-tight text-white">Pedidos</h2>
+          <p className="text-white/70">Gestión de órdenes de compra de la tienda</p>
         </div>
       </div>
 
       {/* Estadísticas */}
       <div className="grid gap-4 md:grid-cols-6">
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-sm font-medium text-white/70">Total</p>
+                <p className="text-2xl font-bold text-white">{stats.total}</p>
               </div>
-              <ShoppingCart className="h-8 w-8 text-blue-500" />
+              <ShoppingCart className="h-8 w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Pendientes</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                <p className="text-sm font-medium text-white/70">Pendientes</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
+              <Clock className="h-8 w-8 text-yellow-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Procesando</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.processing}</p>
+                <p className="text-sm font-medium text-white/70">Procesando</p>
+                <p className="text-2xl font-bold text-blue-400">{stats.processing}</p>
               </div>
-              <Package className="h-8 w-8 text-blue-500" />
+              <Package className="h-8 w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Enviados</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.shipped}</p>
+                <p className="text-sm font-medium text-white/70">Enviados</p>
+                <p className="text-2xl font-bold text-orange-400">{stats.shipped}</p>
               </div>
-              <Truck className="h-8 w-8 text-orange-500" />
+              <Truck className="h-8 w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Entregados</p>
-                <p className="text-2xl font-bold text-green-600">{stats.delivered}</p>
+                <p className="text-sm font-medium text-white/70">Entregados</p>
+                <p className="text-2xl font-bold text-green-400">{stats.delivered}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Ingresos</p>
-                <p className="text-xl font-bold text-purple-600">${stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-sm font-medium text-white/70">Ingresos</p>
+                <p className="text-xl font-bold text-purple-400">${stats.totalRevenue.toLocaleString()}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-purple-500" />
+              <DollarSign className="h-8 w-8 text-purple-400" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filtros */}
-      <Card>
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle className="text-white">Filtros</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="search">Buscar</Label>
+              <Label htmlFor="search" className="text-white/90">
+                Buscar
+              </Label>
               <Input
                 id="search"
                 placeholder="ID, nombre, email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Estado</Label>
+              <Label className="text-white/90">Estado</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Todos los estados" />
                 </SelectTrigger>
                 <SelectContent>
@@ -271,43 +298,45 @@ export default function AdminOrders() {
       </Card>
 
       {/* Lista de pedidos */}
-      <Card>
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
-          <CardTitle>Pedidos ({filteredOrders.length})</CardTitle>
+          <CardTitle className="text-white">Pedidos ({filteredOrders.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {filteredOrders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-white/70">
                 <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No se encontraron pedidos con los filtros aplicados</p>
               </div>
             ) : (
               filteredOrders.map((order) => (
-                <Card key={order.id} className="hover:shadow-md transition-shadow">
+                <Card key={order.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           {getStatusBadge(order.status)}
-                          <Badge variant="outline">#{order.id.slice(-8)}</Badge>
-                          <span className="text-sm text-muted-foreground">
+                          <Badge variant="outline" className="text-white/80 border-white/30">
+                            #{order.id.slice(-8)}
+                          </Badge>
+                          <span className="text-sm text-white/70">
                             {new Date(order.createdAt).toLocaleDateString("es-AR")}
                           </span>
                         </div>
 
                         <div className="grid gap-1 md:grid-cols-2">
                           <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{order.userName}</span>
+                            <User className="h-4 w-4 text-white/70" />
+                            <span className="font-medium text-white">{order.userName}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-bold text-green-600">${order.total.toLocaleString()}</span>
+                            <DollarSign className="h-4 w-4 text-white/70" />
+                            <span className="font-bold text-green-400">${order.total.toLocaleString()}</span>
                           </div>
                         </div>
 
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-white/70">
                           {order.items.length} producto{order.items.length !== 1 ? "s" : ""} • {order.paymentMethod}
                         </p>
                       </div>
@@ -315,7 +344,12 @@ export default function AdminOrders() {
                       <div className="flex items-center gap-2 ml-4">
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedOrder(order)}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedOrder(order)}
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                            >
                               Ver Detalles
                             </Button>
                           </DialogTrigger>
@@ -389,6 +423,91 @@ export default function AdminOrders() {
                           </DialogContent>
                         </Dialog>
 
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                              onClick={() => setEditingOrder(order)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Editar Pedido</DialogTitle>
+                              <DialogDescription>Modifica la información del pedido</DialogDescription>
+                            </DialogHeader>
+                            {editingOrder && (
+                              <div className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label>Nombre del Cliente</Label>
+                                    <Input
+                                      value={editingOrder.userName}
+                                      onChange={(e) => setEditingOrder({ ...editingOrder, userName: e.target.value })}
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input
+                                      value={editingOrder.userEmail}
+                                      onChange={(e) => setEditingOrder({ ...editingOrder, userEmail: e.target.value })}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Teléfono</Label>
+                                  <Input
+                                    value={editingOrder.userPhone}
+                                    onChange={(e) => setEditingOrder({ ...editingOrder, userPhone: e.target.value })}
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Dirección de Envío</Label>
+                                  <Input
+                                    value={editingOrder.shippingAddress}
+                                    onChange={(e) =>
+                                      setEditingOrder({ ...editingOrder, shippingAddress: e.target.value })
+                                    }
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Estado</Label>
+                                  <Select
+                                    value={editingOrder.status}
+                                    onValueChange={(value) =>
+                                      setEditingOrder({ ...editingOrder, status: value as any })
+                                    }
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pendiente</SelectItem>
+                                      <SelectItem value="processing">Procesando</SelectItem>
+                                      <SelectItem value="shipped">Enviado</SelectItem>
+                                      <SelectItem value="delivered">Entregado</SelectItem>
+                                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" onClick={() => setEditingOrder(null)}>
+                                    Cancelar
+                                  </Button>
+                                  <Button onClick={updateOrder}>Actualizar</Button>
+                                </div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
                         {order.status === "pending" && (
                           <Button
                             size="sm"
@@ -421,6 +540,10 @@ export default function AdminOrders() {
                             Entregar
                           </Button>
                         )}
+
+                        <Button size="sm" variant="destructive" onClick={() => deleteOrder(order.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

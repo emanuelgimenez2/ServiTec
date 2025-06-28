@@ -4,33 +4,28 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   Users,
-  ShoppingCart,
   TrendingUp,
   CheckCircle,
   DollarSign,
   Activity,
-  Star,
   Award,
   Zap,
   Calculator,
   Package,
-  Plus,
   FileText,
   MessageSquare,
+  TestTube,
+  BarChart3,
+  RefreshCw,
+  ShoppingCart,
+  Menu,
+  X,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import {
   servicioService,
   ventasService,
@@ -39,6 +34,15 @@ import {
   mensajeService,
   usuarioService,
 } from "@/lib/firebase-services"
+import { testFirebaseConnection } from "@/lib/firebase-test"
+import AdminDashboard from "@/components/admin/dashboard"
+import AdminAnalytics from "@/components/admin/analytics"
+import AdminMessages from "@/components/admin/messages"
+import AdminUsers from "@/components/admin/users"
+import AdminProducts from "@/components/admin/products"
+import AdminAppointments from "@/components/admin/appointments"
+import AdminOrders from "@/components/admin/orders"
+import AdminAccounting from "@/components/admin/accounting"
 
 export default function AdminPage() {
   const [user, setUser] = useState(null)
@@ -71,6 +75,9 @@ export default function AdminPage() {
   const [saleFilters, setSaleFilters] = useState({ search: "" })
   const [productFilters, setProductFilters] = useState({ category: "todos", search: "" })
   const [messageFilters, setMessageFilters] = useState({ type: "todos", search: "", status: "todos" })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("dashboard")
   const router = useRouter()
   const { toast } = useToast()
 
@@ -133,6 +140,7 @@ export default function AdminPage() {
 
   const loadData = async () => {
     try {
+      setIsLoading(true)
       const [appointmentsData, usersData, servicesData, salesData, productsData, messagesData] = await Promise.all([
         turnosService.getAllAppointments(),
         usuarioService.getAllUsers(),
@@ -149,6 +157,18 @@ export default function AdminPage() {
       setProducts(productsData)
       setMessages(messagesData)
 
+      // Cargar pedidos del localStorage
+      const ordersData = JSON.parse(localStorage.getItem("admin_orders") || "[]")
+      setOrders(ordersData)
+
+      // Guardar en localStorage para los componentes de analíticas
+      localStorage.setItem("admin_users", JSON.stringify(usersData))
+      localStorage.setItem("admin_appointments", JSON.stringify(appointmentsData))
+      localStorage.setItem("admin_services", JSON.stringify(servicesData))
+      localStorage.setItem("admin_sales", JSON.stringify(salesData))
+      localStorage.setItem("admin_products", JSON.stringify(productsData))
+      localStorage.setItem("admin_messages", JSON.stringify(messagesData))
+
       // Calculate stats
       const pendingAppointments = appointmentsData.filter((a) => a.status === "pending").length
       const completedAppointments = appointmentsData.filter((a) => a.status === "completed").length
@@ -159,7 +179,7 @@ export default function AdminPage() {
       setStats({
         totalUsers: usersData.length,
         totalAppointments: appointmentsData.length,
-        totalOrders: 0, // No hay órdenes por ahora
+        totalOrders: ordersData.length,
         totalRevenue: servicesRevenue + salesRevenue,
         pendingAppointments,
         completedAppointments,
@@ -173,6 +193,41 @@ export default function AdminPage() {
       })
     } catch (error) {
       console.error("Error loading data:", error)
+      toast({
+        title: "Error",
+        description: "Error al cargar los datos",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // FUNCIÓN DE PRUEBA DE FIREBASE
+  const runFirebaseTest = async () => {
+    console.log("🧪 Ejecutando prueba de Firebase...")
+    try {
+      const result = await testFirebaseConnection()
+
+      if (result.success) {
+        toast({
+          title: "✅ Prueba exitosa",
+          description: `Firebase funciona. Documentos: ${result.documentsCount}`,
+        })
+      } else {
+        toast({
+          title: "❌ Prueba fallida",
+          description: result.error,
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error en prueba:", error)
+      toast({
+        title: "❌ Error en prueba",
+        description: error.message,
+        variant: "destructive",
+      })
     }
   }
 
@@ -298,48 +353,75 @@ export default function AdminPage() {
     }
   }
 
-  const addProduct = () => {
-    const product = {
-      id: Date.now(),
-      ...newProduct,
-      createdAt: new Date().toISOString(),
-      rating: 4.5,
-      reviews: 0,
-      isNew: true,
-      originalPrice: Number.parseFloat(newProduct.salePrice) * 1.2,
-      price: Number.parseFloat(newProduct.salePrice),
-      image: newProduct.image || "/placeholder.svg?height=300&width=300",
-      images: [newProduct.image || "/placeholder.svg?height=600&width=600"],
-      specifications: {
-        Marca: newProduct.brand,
-        Descripción: newProduct.description,
-        ...newProduct.specifications,
-      },
+  const addProduct = async () => {
+    console.log("🚀 === INICIANDO PROCESO DE AGREGAR PRODUCTO ===")
+    console.log("📝 Estado del formulario:", newProduct)
+
+    // Validación de campos requeridos
+    if (!newProduct.name || !newProduct.salePrice || !newProduct.category) {
+      console.log("❌ Validación fallida - campos requeridos faltantes")
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos: Nombre, Precio de Venta y Categoría",
+        variant: "destructive",
+      })
+      return
     }
 
-    // Add to admin products
-    const updatedProducts = [...products, product]
-    setProducts(updatedProducts)
-    localStorage.setItem("admin_products", JSON.stringify(updatedProducts))
+    try {
+      const productData = {
+        name: newProduct.name,
+        description: newProduct.description || "",
+        price: Number.parseFloat(newProduct.salePrice),
+        originalPrice: Number.parseFloat(newProduct.salePrice) * 1.2,
+        stock: Number.parseInt(newProduct.stock) || 0,
+        category: newProduct.category,
+        brand: newProduct.brand || "Sin especificar",
+        image: newProduct.image || "/placeholder.svg?height=300&width=300",
+        images: [newProduct.image || "/placeholder.svg?height=600&width=600"],
+        rating: 4.5,
+        reviews: 0,
+        isNew: true,
+        isActive: true,
+        specifications: {
+          Marca: newProduct.brand || "Sin especificar",
+          Descripción: newProduct.description || "",
+          ...newProduct.specifications,
+        },
+      }
 
-    // Add to store products (for tienda page)
-    const storeProducts = JSON.parse(localStorage.getItem("store_products") || "[]")
-    const updatedStoreProducts = [...storeProducts, product]
-    localStorage.setItem("store_products", JSON.stringify(updatedStoreProducts))
+      console.log("📦 Datos preparados para enviar:", productData)
 
-    setNewProduct({
-      name: "",
-      category: "",
-      stock: "",
-      purchasePrice: "",
-      salePrice: "",
-      description: "",
-      image: "",
-      brand: "",
-      specifications: {},
-    })
-    setIsAddProductOpen(false)
-    loadData()
+      const productId = await productosService.createProduct(productData)
+      console.log("🎉 Producto creado con ID:", productId)
+
+      await loadData()
+
+      setNewProduct({
+        name: "",
+        category: "",
+        stock: "",
+        purchasePrice: "",
+        salePrice: "",
+        description: "",
+        image: "",
+        brand: "",
+        specifications: {},
+      })
+      setIsAddProductOpen(false)
+
+      toast({
+        title: "¡Producto agregado!",
+        description: "El producto ha sido agregado exitosamente y está disponible en la tienda",
+      })
+    } catch (error) {
+      console.error("💥 Error completo al agregar producto:", error)
+      toast({
+        title: "Error",
+        description: `No se pudo agregar el producto: ${error.message}`,
+        variant: "destructive",
+      })
+    }
   }
 
   const formatPrice = (price) => {
@@ -426,1091 +508,272 @@ export default function AdminPage() {
     return matchesType && matchesStatus && matchesSearch
   })
 
+  // Tabs para móvil
+  const tabs = [
+    { id: "dashboard", label: "Dashboard", icon: Activity },
+    { id: "products", label: "Productos", icon: Package },
+    { id: "appointments", label: "Turnos", icon: FileText },
+    { id: "orders", label: "Pedidos", icon: ShoppingCart },
+    { id: "users", label: "Usuarios", icon: Users },
+    { id: "messages", label: "Mensajes", icon: MessageSquare },
+    { id: "accounting", label: "Contabilidad", icon: Calculator },
+    { id: "analytics", label: "Analíticas", icon: BarChart3 },
+  ]
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 flex items-center justify-center">
-        <div className="text-white text-xl">Cargando...</div>
+        <div className="text-white text-xl flex items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+          Cargando Panel de Administración...
+        </div>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header Mejorado */}
         <div className="mb-8">
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+          <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-4 sm:p-6 lg:p-8 border border-white/20 shadow-2xl">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-bold text-white mb-2">
-                  Panel de Administración
-                  <Zap className="inline-block w-8 h-8 ml-2 text-yellow-400" />
-                </h1>
-                <p className="text-white/80 text-lg">Bienvenido de vuelta, {user.name}</p>
-                <div className="flex items-center mt-2">
-                  <Award className="w-5 h-5 text-yellow-400 mr-2" />
-                  <span className="text-white/90">Administrador Principal</span>
+              <div className="flex items-center gap-4 lg:gap-6">
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-3 lg:p-4 shadow-lg">
+                  <Activity className="w-6 h-6 lg:w-10 lg:h-10 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white mb-1 lg:mb-2 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                    Panel de Administración
+                    <Zap className="inline-block w-6 h-6 lg:w-10 lg:h-10 ml-2 lg:ml-3 text-yellow-400 animate-pulse" />
+                  </h1>
+                  <p className="text-white/80 text-sm sm:text-base lg:text-xl">Bienvenido de vuelta, {user.name}</p>
+                  <div className="flex items-center mt-2 lg:mt-3 gap-2 lg:gap-4">
+                    <div className="flex items-center gap-1 lg:gap-2">
+                      <Award className="w-4 h-4 lg:w-6 lg:h-6 text-yellow-400" />
+                      <span className="text-white/90 text-sm lg:text-lg">Administrador Principal</span>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className="text-green-400 border-green-400 bg-green-400/10 text-xs lg:text-sm"
+                    >
+                      <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                      Sistema Activo
+                    </Badge>
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-full p-4">
-                  <Activity className="w-8 h-8 text-white" />
-                </div>
-                <p className="text-white/80 text-sm mt-2">Sistema Activo</p>
+              <div className="flex items-center gap-2 lg:gap-4">
+                <Button
+                  onClick={loadData}
+                  disabled={isLoading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                  size="sm"
+                >
+                  {isLoading ? (
+                    <RefreshCw className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                  )}
+                  <span className="hidden sm:inline">Actualizar</span>
+                </Button>
+                <Button
+                  onClick={runFirebaseTest}
+                  className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg hidden lg:flex"
+                  size="sm"
+                >
+                  <TestTube className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                  Probar Firebase
+                </Button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Usuarios</CardTitle>
-              <Users className="h-5 w-5 opacity-80" />
+        {/* Stats Cards Mejoradas */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8 mb-8 lg:mb-12">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
+              <CardTitle className="text-sm lg:text-lg font-medium opacity-90">Total Usuarios</CardTitle>
+              <div className="bg-white/20 rounded-full p-2 lg:p-3">
+                <Users className="h-4 w-4 lg:h-6 lg:w-6" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalUsers}</div>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                <p className="text-xs opacity-90">+{stats.monthlyGrowth}% este mes</p>
+              <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalUsers}</div>
+              <div className="flex items-center">
+                <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                <p className="text-xs lg:text-sm opacity-90">+{stats.monthlyGrowth}% este mes</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 border-0 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Servicios Realizados</CardTitle>
-              <FileText className="h-5 w-5 opacity-80" />
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 border-0 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
+              <CardTitle className="text-sm lg:text-lg font-medium opacity-90">Servicios Realizados</CardTitle>
+              <div className="bg-white/20 rounded-full p-2 lg:p-3">
+                <FileText className="h-4 w-4 lg:h-6 lg:w-6" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalServices}</div>
-              <div className="flex items-center mt-2">
-                <CheckCircle className="w-4 h-4 mr-1" />
-                <p className="text-xs opacity-90">Servicios completados</p>
+              <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalServices}</div>
+              <div className="flex items-center">
+                <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                <p className="text-xs lg:text-sm opacity-90">Servicios completados</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Mensajes</CardTitle>
-              <MessageSquare className="h-5 w-5 opacity-80" />
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
+              <CardTitle className="text-sm lg:text-lg font-medium opacity-90">Productos</CardTitle>
+              <div className="bg-white/20 rounded-full p-2 lg:p-3">
+                <Package className="h-4 w-4 lg:h-6 lg:w-6" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{stats.totalMessages}</div>
-              <div className="flex items-center mt-2">
-                <span className="text-xs opacity-90">{stats.unreadMessages} sin leer</span>
+              <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalProducts}</div>
+              <div className="flex items-center">
+                <Package className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                <p className="text-xs lg:text-sm opacity-90">En inventario</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-red-500 border-0 text-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Ingresos Totales</CardTitle>
-              <DollarSign className="h-5 w-5 opacity-80" />
+          <Card className="bg-gradient-to-br from-orange-500 to-red-500 border-0 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
+              <CardTitle className="text-sm lg:text-lg font-medium opacity-90">Ingresos Totales</CardTitle>
+              <div className="bg-white/20 rounded-full p-2 lg:p-3">
+                <DollarSign className="h-4 w-4 lg:h-6 lg:w-6" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{formatPrice(stats.totalRevenue)}</div>
-              <div className="flex items-center mt-2">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                <p className="text-xs opacity-90">Ingresos totales</p>
+              <div className="text-xl lg:text-4xl font-bold mb-1 lg:mb-2">{formatPrice(stats.totalRevenue)}</div>
+              <div className="flex items-center">
+                <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                <p className="text-xs lg:text-sm opacity-90">Ingresos totales</p>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="appointments" className="space-y-4">
-          <TabsList className="bg-white/10 backdrop-blur-sm border-white/20">
-            <TabsTrigger value="appointments" className="data-[state=active]:bg-white/20 text-white">
-              Turnos
-            </TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-white/20 text-white">
-              Usuarios
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="data-[state=active]:bg-white/20 text-white">
-              Pedidos
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="data-[state=active]:bg-white/20 text-white">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Mensajes
-              {stats.unreadMessages > 0 && <Badge className="ml-2 bg-red-500 text-white">{stats.unreadMessages}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="accounting" className="data-[state=active]:bg-white/20 text-white">
-              <Calculator className="w-4 h-4 mr-2" />
-              Contabilidad
-            </TabsTrigger>
-            <TabsTrigger value="products" className="data-[state=active]:bg-white/20 text-white">
-              <Package className="w-4 h-4 mr-2" />
-              Productos
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-white/20 text-white">
-              Analíticas
-            </TabsTrigger>
+        {/* Mobile Menu Button */}
+        <div className="lg:hidden mb-6">
+          <Button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5 mr-2" /> : <Menu className="w-5 h-5 mr-2" />}
+            {isMobileMenuOpen ? "Cerrar Menú" : "Abrir Menú de Navegación"}
+          </Button>
+        </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden mb-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+            <div className="grid grid-cols-2 gap-3">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                return (
+                  <Button
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveTab(tab.id)
+                      setIsMobileMenuOpen(false)
+                    }}
+                    variant={activeTab === tab.id ? "default" : "ghost"}
+                    className={`justify-start text-left ${
+                      activeTab === tab.id
+                        ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                        : "text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 mr-2" />
+                    <span className="text-sm">{tab.label}</span>
+                    {tab.id === "messages" && stats.unreadMessages > 0 && (
+                      <Badge className="ml-auto bg-red-500 text-white text-xs">{stats.unreadMessages}</Badge>
+                    )}
+                  </Button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Main Content con Tabs Mejoradas */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 lg:space-y-8">
+          <TabsList className="hidden lg:flex bg-white/10 backdrop-blur-sm border-white/20 p-2 rounded-2xl shadow-xl">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
+              return (
+                <TabsTrigger
+                  key={tab.id}
+                  value={tab.id}
+                  className="data-[state=active]:bg-white/20 text-white px-4 lg:px-6 py-2 lg:py-3 rounded-xl text-sm lg:text-lg font-medium transition-all duration-200 flex items-center"
+                >
+                  <Icon className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                  {tab.label}
+                  {tab.id === "messages" && stats.unreadMessages > 0 && (
+                    <Badge className="ml-2 bg-red-500 text-white animate-pulse text-xs">{stats.unreadMessages}</Badge>
+                  )}
+                </TabsTrigger>
+              )
+            })}
           </TabsList>
 
-          <TabsContent value="appointments">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">Gestión de Turnos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/20">
-                      <TableHead className="text-white/90">Cliente</TableHead>
-                      <TableHead className="text-white/90">Servicio</TableHead>
-                      <TableHead className="text-white/90">Fecha</TableHead>
-                      <TableHead className="text-white/90">Hora</TableHead>
-                      <TableHead className="text-white/90">Estado</TableHead>
-                      <TableHead className="text-white/90">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {appointments.map((appointment) => (
-                      <TableRow key={appointment.id} className="border-white/10">
-                        <TableCell className="text-white">
-                          <div>
-                            <div className="font-medium">{appointment.name}</div>
-                            <div className="text-sm text-white/70">{appointment.phone}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-white">{appointment.serviceName}</TableCell>
-                        <TableCell className="text-white">{formatDate(appointment.date)}</TableCell>
-                        <TableCell className="text-white">{appointment.time}</TableCell>
-                        <TableCell>{getStatusBadge(appointment.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            {appointment.status === "pending" && (
-                              <Button size="sm" onClick={() => updateAppointmentStatus(appointment.id, "confirmed")}>
-                                Confirmar
-                              </Button>
-                            )}
-                            {appointment.status === "confirmed" && (
-                              <Button size="sm" onClick={() => updateAppointmentStatus(appointment.id, "completed")}>
-                                Completar
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => updateAppointmentStatus(appointment.id, "cancelled")}
-                            >
-                              Cancelar
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+              <AdminDashboard />
+            </div>
           </TabsContent>
 
-          <TabsContent value="users">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">Usuarios Registrados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/20">
-                      <TableHead className="text-white/90">Nombre</TableHead>
-                      <TableHead className="text-white/90">Email</TableHead>
-                      <TableHead className="text-white/90">Teléfono</TableHead>
-                      <TableHead className="text-white/90">Fecha de Registro</TableHead>
-                      <TableHead className="text-white/90">Rol</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user.id} className="border-white/10">
-                        <TableCell className="font-medium text-white">{user.name}</TableCell>
-                        <TableCell className="text-white">{user.email}</TableCell>
-                        <TableCell className="text-white">{user.phone}</TableCell>
-                        <TableCell className="text-white">{formatDate(user.createdAt)}</TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === "administrador" ? "default" : "secondary"}>{user.role}</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+          {/* Productos Tab */}
+          <TabsContent value="products" className="min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+              <AdminProducts />
+            </div>
           </TabsContent>
 
-          <TabsContent value="orders">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <CardTitle className="text-white">Pedidos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/20">
-                      <TableHead className="text-white/90">ID</TableHead>
-                      <TableHead className="text-white/90">Cliente</TableHead>
-                      <TableHead className="text-white/90">Productos</TableHead>
-                      <TableHead className="text-white/90">Total</TableHead>
-                      <TableHead className="text-white/90">Fecha</TableHead>
-                      <TableHead className="text-white/90">Estado</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {orders.map((order) => (
-                      <TableRow key={order.id} className="border-white/10">
-                        <TableCell className="font-medium text-white">#{order.id}</TableCell>
-                        <TableCell className="text-white">{order.customerName}</TableCell>
-                        <TableCell className="text-white">{order.items?.length || 0} productos</TableCell>
-                        <TableCell className="text-white">{formatPrice(order.total)}</TableCell>
-                        <TableCell className="text-white">{formatDate(order.createdAt)}</TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+          {/* Turnos Tab */}
+          <TabsContent value="appointments" className="min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+              <AdminAppointments />
+            </div>
           </TabsContent>
 
-          {/* Nueva pestaña de Mensajes */}
-          <TabsContent value="messages">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-white flex items-center">
-                    <MessageSquare className="w-5 h-5 mr-2" />
-                    Mensajes Recibidos
-                  </CardTitle>
-                  <div className="flex items-center space-x-2">
-                    <Badge className="bg-red-500 text-white">{stats.unreadMessages} Sin Leer</Badge>
-                    <Badge className="bg-blue-500 text-white">{stats.totalMessages} Total</Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex space-x-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Buscar por nombre, teléfono, email o mensaje..."
-                      value={messageFilters.search}
-                      onChange={(e) => setMessageFilters({ ...messageFilters, search: e.target.value })}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/70"
-                    />
-                  </div>
-                  <Select
-                    value={messageFilters.type}
-                    onValueChange={(value) => setMessageFilters({ ...messageFilters, type: value })}
-                  >
-                    <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos los servicios</SelectItem>
-                      <SelectItem value="reparacion">Reparación PC</SelectItem>
-                      <SelectItem value="starlink">Starlink</SelectItem>
-                      <SelectItem value="camaras">Cámaras</SelectItem>
-                      <SelectItem value="desarrollo">Desarrollo Web</SelectItem>
-                      <SelectItem value="contacto">Contacto General</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select
-                    value={messageFilters.status}
-                    onValueChange={(value) => setMessageFilters({ ...messageFilters, status: value })}
-                  >
-                    <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos los estados</SelectItem>
-                      <SelectItem value="unread">Sin Leer</SelectItem>
-                      <SelectItem value="responded">Respondido</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/20">
-                      <TableHead className="text-white/90">Cliente</TableHead>
-                      <TableHead className="text-white/90">Servicio</TableHead>
-                      <TableHead className="text-white/90">Mensaje</TableHead>
-                      <TableHead className="text-white/90">Fecha</TableHead>
-                      <TableHead className="text-white/90">Estado</TableHead>
-                      <TableHead className="text-white/90">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMessages.map((message) => (
-                      <TableRow key={message.id} className="border-white/10">
-                        <TableCell className="text-white">
-                          <div>
-                            <div className="font-medium">{message.nombre}</div>
-                            <div className="text-sm text-white/70">{message.telefono}</div>
-                            <div className="text-sm text-white/70">{message.email}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-white">
-                          <div className="flex items-center space-x-2">{getServiceTypeBadge(message.serviceType)}</div>
-                        </TableCell>
-                        <TableCell className="text-white">
-                          <div className="max-w-xs truncate">{message.mensaje}</div>
-                        </TableCell>
-                        <TableCell className="text-white">{formatDate(message.createdAt)}</TableCell>
-                        <TableCell>{getMessageStatusBadge(message.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    if (message.status === "unread") {
-                                      updateMessageStatus(message.id, "responded")
-                                    }
-                                  }}
-                                >
-                                  Ver
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>Mensaje de {message.nombre}</DialogTitle>
-                                </DialogHeader>
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <strong>Nombre:</strong> {message.nombre}
-                                    </div>
-                                    <div>
-                                      <strong>Teléfono:</strong> {message.telefono}
-                                    </div>
-                                    <div>
-                                      <strong>Email:</strong> {message.email}
-                                    </div>
-                                    <div>
-                                      <strong>Servicio:</strong> {getServiceTypeBadge(message.serviceType)}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <strong>Mensaje:</strong>
-                                    <Textarea value={message.mensaje} readOnly className="mt-2" rows={6} />
-                                  </div>
-                                  <div className="flex justify-end space-x-2">
-                                    <Button
-                                      onClick={() => updateMessageStatus(message.id, "responded")}
-                                      className="bg-green-600 hover:bg-green-700"
-                                    >
-                                      <CheckCircle className="w-4 h-4 mr-2" />
-                                      Marcar como Respondido
-                                    </Button>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+          {/* Pedidos Tab */}
+          <TabsContent value="orders" className="min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+              <AdminOrders />
+            </div>
           </TabsContent>
 
-          {/* Resto de pestañas existentes */}
-          <TabsContent value="accounting">
-            <Tabs defaultValue="services" className="space-y-4">
-              <TabsList className="bg-white/10 backdrop-blur-sm border-white/20">
-                <TabsTrigger value="services" className="data-[state=active]:bg-white/20 text-white">
-                  Servicios Realizados
-                </TabsTrigger>
-                <TabsTrigger value="sales" className="data-[state=active]:bg-white/20 text-white">
-                  Ventas
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="services">
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-white">Servicios Realizados</CardTitle>
-                      <Dialog open={isAddServiceOpen} onOpenChange={setIsAddServiceOpen}>
-                        <DialogTrigger asChild>
-                          <Button className="bg-green-600 hover:bg-green-700">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Agregar Servicio
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>Agregar Nuevo Servicio</DialogTitle>
-                          </DialogHeader>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="clientName">Nombre del Cliente</Label>
-                              <Input
-                                id="clientName"
-                                value={newService.clientName}
-                                onChange={(e) => setNewService({ ...newService, clientName: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="clientPhone">Teléfono</Label>
-                              <Input
-                                id="clientPhone"
-                                value={newService.clientPhone}
-                                onChange={(e) => setNewService({ ...newService, clientPhone: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="serviceType">Tipo de Servicio</Label>
-                              <Select
-                                value={newService.serviceType}
-                                onValueChange={(value) => setNewService({ ...newService, serviceType: value })}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar servicio" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="pc">Reparación PC</SelectItem>
-                                  <SelectItem value="starlink">Starlink</SelectItem>
-                                  <SelectItem value="camara">Cámaras</SelectItem>
-                                  <SelectItem value="web">Página Web</SelectItem>
-                                  <SelectItem value="otro">Otro</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            {newService.serviceType === "otro" && (
-                              <div>
-                                <Label htmlFor="customService">Especificar Servicio</Label>
-                                <Input
-                                  id="customService"
-                                  value={newService.customService}
-                                  onChange={(e) => setNewService({ ...newService, customService: e.target.value })}
-                                />
-                              </div>
-                            )}
-                            <div>
-                              <Label htmlFor="date">Fecha</Label>
-                              <Input
-                                id="date"
-                                type="date"
-                                value={newService.date}
-                                onChange={(e) => setNewService({ ...newService, date: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="price">Precio</Label>
-                              <Input
-                                id="price"
-                                type="number"
-                                value={newService.price}
-                                onChange={(e) => setNewService({ ...newService, price: e.target.value })}
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label htmlFor="notes">Notas</Label>
-                              <Textarea
-                                id="notes"
-                                value={newService.notes}
-                                onChange={(e) => setNewService({ ...newService, notes: e.target.value })}
-                              />
-                            </div>
-                            <div className="col-span-2 flex items-center space-x-2">
-                              <Checkbox
-                                id="completed"
-                                checked={newService.completed}
-                                onCheckedChange={(checked) => setNewService({ ...newService, completed: checked })}
-                              />
-                              <Label htmlFor="completed">Servicio Completado</Label>
-                            </div>
-                          </div>
-                          <div className="flex justify-end space-x-2 mt-4">
-                            <Button variant="outline" onClick={() => setIsAddServiceOpen(false)}>
-                              Cancelar
-                            </Button>
-                            <Button onClick={addService}>Agregar Servicio</Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex space-x-4 mb-4">
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Buscar por cliente, teléfono o servicio..."
-                          value={serviceFilters.search}
-                          onChange={(e) => setServiceFilters({ ...serviceFilters, search: e.target.value })}
-                        />
-                      </div>
-                      <Select
-                        value={serviceFilters.type}
-                        onChange={(value) => setServiceFilters({ ...serviceFilters, type: value })}
-                      >
-                        <SelectTrigger className="w-48">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todos">Todos los servicios</SelectItem>
-                          <SelectItem value="pc">Reparación PC</SelectItem>
-                          <SelectItem value="starlink">Starlink</SelectItem>
-                          <SelectItem value="camara">Cámaras</SelectItem>
-                          <SelectItem value="web">Página Web</SelectItem>
-                          <SelectItem value="otro">Otro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-white/20">
-                          <TableHead className="text-white/90">Cliente</TableHead>
-                          <TableHead className="text-white/90">Servicio</TableHead>
-                          <TableHead className="text-white/90">Fecha</TableHead>
-                          <TableHead className="text-white/90">Precio</TableHead>
-                          <TableHead className="text-white/90">Estado</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredServices.map((service) => (
-                          <TableRow key={service.id} className="border-white/10">
-                            <TableCell className="text-white">
-                              <div>
-                                <div className="font-medium">{service.clientName}</div>
-                                <div className="text-sm text-white/70">{service.clientPhone}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-white">
-                              <div className="flex items-center space-x-2">
-                                {getServiceTypeBadge(service.serviceType)}
-                                <span>{service.serviceType}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-white">{formatDate(service.date)}</TableCell>
-                            <TableCell className="text-white">
-                              {formatPrice(Number.parseFloat(service.price))}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={service.completed ? "default" : "secondary"}>
-                                {service.completed ? "Completado" : "Pendiente"}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="sales">
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <CardTitle className="text-white">Ventas Realizadas</CardTitle>
-                      <Dialog open={isAddSaleOpen} onOpenChange={setIsAddSaleOpen}>
-                        <DialogTrigger asChild>
-                          <Button className="bg-blue-600 hover:bg-blue-700">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Agregar Venta
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>Agregar Nueva Venta</DialogTitle>
-                          </DialogHeader>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="productName">Nombre del Producto</Label>
-                              <Input
-                                id="productName"
-                                value={newSale.productName}
-                                onChange={(e) => setNewSale({ ...newSale, productName: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="saleClientName">Nombre del Cliente</Label>
-                              <Input
-                                id="saleClientName"
-                                value={newSale.clientName}
-                                onChange={(e) => setNewSale({ ...newSale, clientName: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="saleClientPhone">Teléfono</Label>
-                              <Input
-                                id="saleClientPhone"
-                                value={newSale.clientPhone}
-                                onChange={(e) => setNewSale({ ...newSale, clientPhone: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="quantity">Cantidad</Label>
-                              <Input
-                                id="quantity"
-                                type="number"
-                                min="1"
-                                value={newSale.quantity}
-                                onChange={(e) => setNewSale({ ...newSale, quantity: Number.parseInt(e.target.value) })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="unitPrice">Precio Unitario</Label>
-                              <Input
-                                id="unitPrice"
-                                type="number"
-                                value={newSale.unitPrice}
-                                onChange={(e) => setNewSale({ ...newSale, unitPrice: e.target.value })}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="saleDate">Fecha</Label>
-                              <Input
-                                id="saleDate"
-                                type="date"
-                                value={newSale.date}
-                                onChange={(e) => setNewSale({ ...newSale, date: e.target.value })}
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label htmlFor="saleNotes">Notas</Label>
-                              <Textarea
-                                id="saleNotes"
-                                value={newSale.notes}
-                                onChange={(e) => setNewSale({ ...newSale, notes: e.target.value })}
-                              />
-                            </div>
-                            <div className="col-span-2">
-                              <Label>
-                                Precio Total:{" "}
-                                {formatPrice(Number.parseFloat(newSale.unitPrice || 0) * newSale.quantity)}
-                              </Label>
-                            </div>
-                          </div>
-                          <div className="flex justify-end space-x-2 mt-4">
-                            <Button variant="outline" onClick={() => setIsAddSaleOpen(false)}>
-                              Cancelar
-                            </Button>
-                            <Button onClick={addSale}>Agregar Venta</Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-4">
-                      <Input
-                        placeholder="Buscar por cliente, teléfono o producto..."
-                        value={saleFilters.search}
-                        onChange={(e) => setSaleFilters({ ...saleFilters, search: e.target.value })}
-                      />
-                    </div>
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-white/20">
-                          <TableHead className="text-white/90">Producto</TableHead>
-                          <TableHead className="text-white/90">Cliente</TableHead>
-                          <TableHead className="text-white/90">Cantidad</TableHead>
-                          <TableHead className="text-white/90">Precio Unit.</TableHead>
-                          <TableHead className="text-white/90">Total</TableHead>
-                          <TableHead className="text-white/90">Fecha</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredSales.map((sale) => (
-                          <TableRow key={sale.id} className="border-white/10">
-                            <TableCell className="text-white font-medium">{sale.productName}</TableCell>
-                            <TableCell className="text-white">
-                              <div>
-                                <div className="font-medium">{sale.clientName}</div>
-                                <div className="text-sm text-white/70">{sale.clientPhone}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-white">{sale.quantity}</TableCell>
-                            <TableCell className="text-white">
-                              {formatPrice(Number.parseFloat(sale.unitPrice))}
-                            </TableCell>
-                            <TableCell className="text-white">
-                              {formatPrice(Number.parseFloat(sale.totalPrice))}
-                            </TableCell>
-                            <TableCell className="text-white">{formatDate(sale.date)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+          {/* Usuarios Tab */}
+          <TabsContent value="users" className="min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+              <AdminUsers />
+            </div>
           </TabsContent>
 
-          {/* Nueva pestaña de Productos */}
-          <TabsContent value="products">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle className="text-white">Gestión de Productos</CardTitle>
-                  <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-purple-600 hover:bg-purple-700">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Agregar Producto
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Agregar Nuevo Producto</DialogTitle>
-                      </DialogHeader>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="productName">Nombre del Producto</Label>
-                          <Input
-                            id="productName"
-                            value={newProduct.name}
-                            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="productBrand">Marca</Label>
-                          <Input
-                            id="productBrand"
-                            value={newProduct.brand}
-                            onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="productCategory">Categoría</Label>
-                          <Select
-                            value={newProduct.category}
-                            onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar categoría" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Notebooks">Notebooks</SelectItem>
-                              <SelectItem value="Celulares">Celulares</SelectItem>
-                              <SelectItem value="Parlantes">Parlantes</SelectItem>
-                              <SelectItem value="Streaming">Streaming</SelectItem>
-                              <SelectItem value="Smart Home">Smart Home</SelectItem>
-                              <SelectItem value="Accesorios">Accesorios</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="productStock">Stock</Label>
-                          <Input
-                            id="productStock"
-                            type="number"
-                            min="0"
-                            value={newProduct.stock}
-                            onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="purchasePrice">Precio de Compra (Privado)</Label>
-                          <Input
-                            id="purchasePrice"
-                            type="number"
-                            value={newProduct.purchasePrice}
-                            onChange={(e) => setNewProduct({ ...newProduct, purchasePrice: e.target.value })}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="salePrice">Precio de Venta</Label>
-                          <Input
-                            id="salePrice"
-                            type="number"
-                            value={newProduct.salePrice}
-                            onChange={(e) => setNewProduct({ ...newProduct, salePrice: e.target.value })}
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <Label htmlFor="productDescription">Descripción</Label>
-                          <Textarea
-                            id="productDescription"
-                            value={newProduct.description}
-                            onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <Label htmlFor="productImage">URL de Imagen</Label>
-                          <Input
-                            id="productImage"
-                            value={newProduct.image}
-                            onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                            placeholder="/placeholder.svg?height=300&width=300"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end space-x-2 mt-4">
-                        <Button variant="outline" onClick={() => setIsAddProductOpen(false)}>
-                          Cancelar
-                        </Button>
-                        <Button onClick={addProduct}>Agregar Producto</Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex space-x-4 mb-4">
-                  <div className="flex-1">
-                    <Input
-                      placeholder="Buscar por nombre o marca..."
-                      value={productFilters.search}
-                      onChange={(e) => setProductFilters({ ...productFilters, search: e.target.value })}
-                    />
-                  </div>
-                  <Select
-                    value={productFilters.category}
-                    onChange={(value) => setProductFilters({ ...productFilters, category: value })}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todas las categorías</SelectItem>
-                      <SelectItem value="Notebooks">Notebooks</SelectItem>
-                      <SelectItem value="Celulares">Celulares</SelectItem>
-                      <SelectItem value="Parlantes">Parlantes</SelectItem>
-                      <SelectItem value="Streaming">Streaming</SelectItem>
-                      <SelectItem value="Smart Home">Smart Home</SelectItem>
-                      <SelectItem value="Accesorios">Accesorios</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-white/20">
-                      <TableHead className="text-white/90">Producto</TableHead>
-                      <TableHead className="text-white/90">Categoría</TableHead>
-                      <TableHead className="text-white/90">Stock</TableHead>
-                      <TableHead className="text-white/90">P. Compra</TableHead>
-                      <TableHead className="text-white/90">P. Venta</TableHead>
-                      <TableHead className="text-white/90">Margen</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProducts.map((product) => {
-                      const margin =
-                        ((Number.parseFloat(product.salePrice) - Number.parseFloat(product.purchasePrice)) /
-                          Number.parseFloat(product.purchasePrice)) *
-                        100
-                      return (
-                        <TableRow key={product.id} className="border-white/10">
-                          <TableCell className="text-white">
-                            <div>
-                              <div className="font-medium">{product.name}</div>
-                              <div className="text-sm text-white/70">{product.brand}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-white">
-                            <Badge variant="outline">{product.category}</Badge>
-                          </TableCell>
-                          <TableCell className="text-white">
-                            <Badge variant={Number.parseInt(product.stock) > 5 ? "default" : "destructive"}>
-                              {product.stock} unidades
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-white">
-                            {formatPrice(Number.parseFloat(product.purchasePrice))}
-                          </TableCell>
-                          <TableCell className="text-white">
-                            {formatPrice(Number.parseFloat(product.salePrice))}
-                          </TableCell>
-                          <TableCell className="text-white">
-                            <Badge variant={margin > 30 ? "default" : margin > 15 ? "secondary" : "destructive"}>
-                              {margin.toFixed(1)}%
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+          {/* Mensajes Tab */}
+          <TabsContent value="messages" className="min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+              <AdminMessages />
+            </div>
           </TabsContent>
 
-          <TabsContent value="analytics">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white">Servicios Más Solicitados</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { name: "Reparación de Computadoras", count: 15, percentage: 40, color: "bg-blue-500" },
-                      { name: "Instalación Starlink", count: 8, percentage: 25, color: "bg-green-500" },
-                      { name: "Cámaras de Seguridad", count: 6, percentage: 20, color: "bg-purple-500" },
-                      { name: "Desarrollo Web", count: 4, percentage: 15, color: "bg-orange-500" },
-                    ].map((service, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-white">{service.name}</div>
-                          <div className="text-sm text-white/70">{service.count} solicitudes</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium text-white">{service.percentage}%</div>
-                          <div className="w-20 bg-white/20 rounded-full h-2">
-                            <div
-                              className={`${service.color} h-2 rounded-full`}
-                              style={{ width: `${service.percentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Contabilidad Tab */}
+          <TabsContent value="accounting" className="min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+              <AdminAccounting />
+            </div>
+          </TabsContent>
 
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white">Productos Más Vendidos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {sales.slice(0, 5).map((sale, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-white">{sale.productName}</div>
-                          <div className="text-sm text-white/70">{sale.quantity} vendidos</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium text-white">
-                            {formatPrice(Number.parseFloat(sale.totalPrice))}
-                          </div>
-                          <div className="text-sm text-white/70">Total</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white">Resumen Financiero</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-green-500/20 rounded-lg border border-green-500/30">
-                      <div className="flex items-center">
-                        <CheckCircle className="w-8 h-8 text-green-400 mr-3" />
-                        <div>
-                          <div className="font-medium text-white">Ingresos por Servicios</div>
-                          <div className="text-sm text-white/70">{stats.totalServices} servicios</div>
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold text-green-400">
-                        {formatPrice(
-                          services.reduce((sum, service) => sum + (Number.parseFloat(service.price) || 0), 0),
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-blue-500/20 rounded-lg border border-blue-500/30">
-                      <div className="flex items-center">
-                        <ShoppingCart className="w-8 h-8 text-blue-400 mr-3" />
-                        <div>
-                          <div className="font-medium text-white">Ingresos por Ventas</div>
-                          <div className="text-sm text-white/70">{stats.totalSales} ventas</div>
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold text-blue-400">
-                        {formatPrice(sales.reduce((sum, sale) => sum + (Number.parseFloat(sale.totalPrice) || 0), 0))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-purple-500/20 rounded-lg border border-purple-500/30">
-                      <div className="flex items-center">
-                        <Package className="w-8 h-8 text-purple-400 mr-3" />
-                        <div>
-                          <div className="font-medium text-white">Valor del Inventario</div>
-                          <div className="text-sm text-white/70">{stats.totalProducts} productos</div>
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold text-purple-400">
-                        {formatPrice(
-                          products.reduce(
-                            (sum, product) =>
-                              sum + (Number.parseFloat(product.purchasePrice) * Number.parseInt(product.stock) || 0),
-                            0,
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white">Métricas de Rendimiento</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-white mb-2">
-                        <span>Turnos Completados</span>
-                        <span>
-                          {stats.completedAppointments}/{stats.totalAppointments}
-                        </span>
-                      </div>
-                      <Progress
-                        value={(stats.completedAppointments / Math.max(stats.totalAppointments, 1)) * 100}
-                        className="bg-white/20"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-white mb-2">
-                        <span>Productos en Stock</span>
-                        <span>
-                          {products.filter((p) => Number.parseInt(p.stock) > 0).length}/{products.length}
-                        </span>
-                      </div>
-                      <Progress
-                        value={
-                          (products.filter((p) => Number.parseInt(p.stock) > 0).length / Math.max(products.length, 1)) *
-                          100
-                        }
-                        className="bg-white/20"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-white mb-2">
-                        <span>Mensajes Respondidos</span>
-                        <span>
-                          {stats.totalMessages - stats.unreadMessages}/{stats.totalMessages}
-                        </span>
-                      </div>
-                      <Progress
-                        value={((stats.totalMessages - stats.unreadMessages) / Math.max(stats.totalMessages, 1)) * 100}
-                        className="bg-white/20"
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-white mb-2">
-                        <span>Satisfacción del Cliente</span>
-                        <span className="flex items-center">
-                          <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                          {stats.customerSatisfaction}/5
-                        </span>
-                      </div>
-                      <Progress value={(stats.customerSatisfaction / 5) * 100} className="bg-white/20" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Analíticas Tab */}
+          <TabsContent value="analytics" className="min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+              <AdminAnalytics />
             </div>
           </TabsContent>
         </Tabs>

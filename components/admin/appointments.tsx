@@ -7,8 +7,17 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Calendar, Clock, User, Phone, Mail, CheckCircle, XCircle } from "lucide-react"
+import { Calendar, Clock, User, Phone, Mail, CheckCircle, XCircle, Edit } from "lucide-react"
 import { turnosService } from "@/lib/firebase-services"
 
 interface Appointment {
@@ -31,6 +40,7 @@ export default function AdminAppointments() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [filterService, setFilterService] = useState<string>("all")
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null)
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
@@ -102,6 +112,47 @@ export default function AdminAppointments() {
     }
   }
 
+  const updateAppointment = async () => {
+    if (!editingAppointment) return
+
+    try {
+      await turnosService.updateAppointment(editingAppointment.id, editingAppointment)
+      await loadAppointments()
+
+      setEditingAppointment(null)
+      toast({
+        title: "Turno actualizado",
+        description: "El turno ha sido actualizado exitosamente",
+      })
+    } catch (error) {
+      console.error("Error updating appointment:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el turno",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const deleteAppointment = async (appointmentId: string) => {
+    try {
+      await turnosService.deleteAppointment(appointmentId)
+      await loadAppointments()
+
+      toast({
+        title: "Turno eliminado",
+        description: "El turno ha sido eliminado exitosamente",
+      })
+    } catch (error) {
+      console.error("Error deleting appointment:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el turno",
+        variant: "destructive",
+      })
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -149,7 +200,7 @@ export default function AdminAppointments() {
     return (
       <div className="space-y-6">
         <div className="text-center py-8">
-          <p>Cargando turnos...</p>
+          <p className="text-white/70">Cargando turnos...</p>
         </div>
       </div>
     )
@@ -159,97 +210,98 @@ export default function AdminAppointments() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Turnos
-          </h2>
-          <p className="text-muted-foreground">Gestión de citas y turnos programados</p>
+          <h2 className="text-3xl font-bold tracking-tight text-white">Turnos</h2>
+          <p className="text-white/70">Gestión de citas y turnos programados</p>
         </div>
       </div>
 
       {/* Estadísticas */}
       <div className="grid gap-4 md:grid-cols-5">
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-sm font-medium text-white/70">Total</p>
+                <p className="text-2xl font-bold text-white">{stats.total}</p>
               </div>
-              <Calendar className="h-8 w-8 text-blue-500" />
+              <Calendar className="h-8 w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Pendientes</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+                <p className="text-sm font-medium text-white/70">Pendientes</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-500" />
+              <Clock className="h-8 w-8 text-yellow-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Confirmados</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.confirmed}</p>
+                <p className="text-sm font-medium text-white/70">Confirmados</p>
+                <p className="text-2xl font-bold text-blue-400">{stats.confirmed}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-blue-500" />
+              <CheckCircle className="h-8 w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Completados</p>
-                <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+                <p className="text-sm font-medium text-white/70">Completados</p>
+                <p className="text-2xl font-bold text-green-400">{stats.completed}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-8 w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Cancelados</p>
-                <p className="text-2xl font-bold text-red-600">{stats.cancelled}</p>
+                <p className="text-sm font-medium text-white/70">Cancelados</p>
+                <p className="text-2xl font-bold text-red-400">{stats.cancelled}</p>
               </div>
-              <XCircle className="h-8 w-8 text-red-500" />
+              <XCircle className="h-8 w-8 text-red-400" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filtros */}
-      <Card>
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+          <CardTitle className="text-white">Filtros</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="search">Buscar</Label>
+              <Label htmlFor="search" className="text-white/90">
+                Buscar
+              </Label>
               <Input
                 id="search"
                 placeholder="Nombre, email, teléfono..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Estado</Label>
+              <Label className="text-white/90">Estado</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Todos los estados" />
                 </SelectTrigger>
                 <SelectContent>
@@ -263,9 +315,9 @@ export default function AdminAppointments() {
             </div>
 
             <div className="space-y-2">
-              <Label>Servicio</Label>
+              <Label className="text-white/90">Servicio</Label>
               <Select value={filterService} onValueChange={setFilterService}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Todos los servicios" />
                 </SelectTrigger>
                 <SelectContent>
@@ -282,54 +334,170 @@ export default function AdminAppointments() {
       </Card>
 
       {/* Lista de turnos */}
-      <Card>
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
-          <CardTitle>Turnos Programados ({filteredAppointments.length})</CardTitle>
+          <CardTitle className="text-white">Turnos Programados ({filteredAppointments.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             {filteredAppointments.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-white/70">
                 <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No se encontraron turnos con los filtros aplicados</p>
               </div>
             ) : (
               filteredAppointments.map((appointment) => (
-                <Card key={appointment.id} className="hover:shadow-md transition-shadow">
+                <Card key={appointment.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           {getStatusBadge(appointment.status)}
-                          <Badge variant="outline">{appointment.service}</Badge>
-                          <span className="text-sm text-muted-foreground">
+                          <Badge variant="outline" className="text-white/80 border-white/30">
+                            {appointment.service}
+                          </Badge>
+                          <span className="text-sm text-white/70">
                             {new Date(appointment.date).toLocaleDateString("es-AR")} - {appointment.time}
                           </span>
                         </div>
 
                         <div className="grid gap-1 md:grid-cols-3">
                           <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{appointment.userName}</span>
+                            <User className="h-4 w-4 text-white/70" />
+                            <span className="font-medium text-white">{appointment.userName}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{appointment.userEmail}</span>
+                            <Mail className="h-4 w-4 text-white/70" />
+                            <span className="text-sm text-white/80">{appointment.userEmail}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{appointment.userPhone}</span>
+                            <Phone className="h-4 w-4 text-white/70" />
+                            <span className="text-sm text-white/80">{appointment.userPhone}</span>
                           </div>
                         </div>
 
                         {appointment.notes && (
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-white/70">
                             <strong>Notas:</strong> {appointment.notes}
                           </p>
                         )}
                       </div>
 
                       <div className="flex items-center gap-2 ml-4">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                              onClick={() => setEditingAppointment(appointment)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Editar Turno</DialogTitle>
+                              <DialogDescription>Modifica la información del turno</DialogDescription>
+                            </DialogHeader>
+                            {editingAppointment && (
+                              <div className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label>Nombre</Label>
+                                    <Input
+                                      value={editingAppointment.userName}
+                                      onChange={(e) =>
+                                        setEditingAppointment({ ...editingAppointment, userName: e.target.value })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Email</Label>
+                                    <Input
+                                      value={editingAppointment.userEmail}
+                                      onChange={(e) =>
+                                        setEditingAppointment({ ...editingAppointment, userEmail: e.target.value })
+                                      }
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label>Teléfono</Label>
+                                    <Input
+                                      value={editingAppointment.userPhone}
+                                      onChange={(e) =>
+                                        setEditingAppointment({ ...editingAppointment, userPhone: e.target.value })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Servicio</Label>
+                                    <Select
+                                      value={editingAppointment.service}
+                                      onValueChange={(value) =>
+                                        setEditingAppointment({ ...editingAppointment, service: value })
+                                      }
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Reparación de PC">Reparación de PC</SelectItem>
+                                        <SelectItem value="Instalación Starlink">Instalación Starlink</SelectItem>
+                                        <SelectItem value="Cámaras de Seguridad">Cámaras de Seguridad</SelectItem>
+                                        <SelectItem value="Desarrollo Web">Desarrollo Web</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label>Fecha</Label>
+                                    <Input
+                                      type="date"
+                                      value={editingAppointment.date}
+                                      onChange={(e) =>
+                                        setEditingAppointment({ ...editingAppointment, date: e.target.value })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Hora</Label>
+                                    <Input
+                                      type="time"
+                                      value={editingAppointment.time}
+                                      onChange={(e) =>
+                                        setEditingAppointment({ ...editingAppointment, time: e.target.value })
+                                      }
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label>Notas</Label>
+                                  <Textarea
+                                    value={editingAppointment.notes || ""}
+                                    onChange={(e) =>
+                                      setEditingAppointment({ ...editingAppointment, notes: e.target.value })
+                                    }
+                                  />
+                                </div>
+
+                                <div className="flex justify-end gap-2">
+                                  <Button variant="outline" onClick={() => setEditingAppointment(null)}>
+                                    Cancelar
+                                  </Button>
+                                  <Button onClick={updateAppointment}>Actualizar</Button>
+                                </div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
                         {appointment.status === "pending" && (
                           <>
                             <Button
@@ -371,6 +539,10 @@ export default function AdminAppointments() {
                             </Button>
                           </>
                         )}
+
+                        <Button size="sm" variant="destructive" onClick={() => deleteAppointment(appointment.id)}>
+                          <XCircle className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

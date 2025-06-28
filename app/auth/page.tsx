@@ -6,47 +6,63 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { signInWithGoogle } from "@/lib/auth-service"
-import { useAuthState } from "react-firebase-hooks/auth"
+import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 
 export default function AuthPage() {
   const [loading, setLoading] = useState(false)
-  const [user, authLoading] = useAuthState(auth)
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    if (!authLoading && user) {
-      // Check if user is admin
-      if (user.email === "admin@servitec.com") {
-        router.push("/admin")
-      } else {
-        router.push("/")
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      console.log("🔥 Auth page - user state:", user?.email)
+      setUser(user)
+      setAuthLoading(false)
+
+      // Solo redirigir si el usuario ya está logueado y no está en proceso de login
+      if (user && !loading) {
+        console.log("👤 User already logged in, redirecting...")
+
+        // Check if user is admin
+        if (user.email === "admin@servitec.com") {
+          router.push("/admin")
+        } else {
+          router.push("/")
+        }
       }
-    }
-  }, [user, authLoading, router])
+    })
+
+    return () => unsubscribe()
+  }, [router, loading])
 
   const handleGoogleSignIn = async () => {
     setLoading(true)
     try {
+      console.log("🚀 Starting Google sign in...")
       const user = await signInWithGoogle()
+      console.log("✅ Sign in successful:", user.email)
 
       toast({
         title: "¡Bienvenido!",
         description: "Has iniciado sesión correctamente.",
       })
 
-      // Trigger custom event for navbar update
-      window.dispatchEvent(new CustomEvent("userUpdated"))
-
-      // Redirect based on user role
-      if (user.email === "admin@servitec.com") {
-        router.push("/admin")
-      } else {
-        router.push("/")
-      }
+      // Esperar un momento para que se actualice el estado
+      setTimeout(() => {
+        // Redirect based on user role
+        if (user.email === "admin@servitec.com") {
+          console.log("🛡️ Admin user, redirecting to admin...")
+          router.push("/admin")
+        } else {
+          console.log("👤 Regular user, redirecting to home...")
+          router.push("/")
+        }
+      }, 1000)
     } catch (error: any) {
-      console.error("Error signing in:", error)
+      console.error("❌ Error signing in:", error)
       toast({
         title: "Error de autenticación",
         description: "No se pudo iniciar sesión. Intenta nuevamente.",
