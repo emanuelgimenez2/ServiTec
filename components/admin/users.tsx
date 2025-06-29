@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Users, Search, Plus, Edit, Trash2, Mail, Phone, Calendar, RefreshCw, ChevronRight } from "lucide-react"
 import { usuarioService, type Usuario } from "@/lib/firebase-services"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/lib/firebase"
 
 export default function UsersComponent() {
   const [users, setUsers] = useState<Usuario[]>([])
@@ -37,10 +39,21 @@ export default function UsersComponent() {
   const loadUsers = async () => {
     try {
       setLoading(true)
-      console.log("🔄 Cargando usuarios desde Firebase...")
-      const data = await usuarioService.getAllUsers()
-      console.log("👥 Usuarios cargados:", data)
-      setUsers(data)
+      console.log("🔄 Cargando usuarios desde Firebase colección 'usuario'...")
+
+      // Cambiar de usuarioService.getAllUsers() a cargar directamente desde "usuario"
+      const usersRef = collection(db, "usuario")
+      const querySnapshot = await getDocs(usersRef)
+
+      const usersData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      }))
+
+      console.log("👥 Usuarios cargados desde 'usuario':", usersData)
+      setUsers(usersData)
     } catch (error) {
       console.error("❌ Error loading users:", error)
       toast({

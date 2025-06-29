@@ -11,7 +11,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { carritoService, type Cart } from "@/lib/firebase-services"
+import { carritoService, pedidosService, type Cart } from "@/lib/firebase-services"
 
 export default function CarritoPage() {
   const [cart, setCart] = useState<Cart | null>(null)
@@ -131,6 +131,30 @@ export default function CarritoPage() {
 
     try {
       console.log("💳 Procesando checkout")
+
+      // Crear el pedido
+      const orderData = {
+        userId: user.uid,
+        userName: user.displayName || "Usuario",
+        userEmail: user.email,
+        userPhone: "No especificado",
+        items: cart.items.map((item) => ({
+          id: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image,
+        })),
+        total: total,
+        status: "pending" as const,
+        shippingAddress: "Dirección no especificada",
+        paymentMethod: "Pendiente",
+      }
+
+      // Crear pedido en Firebase
+      await pedidosService.createOrder(orderData)
+
+      // Completar el carrito (cambia status a "completed")
       await carritoService.completeCart(user.uid)
 
       toast({

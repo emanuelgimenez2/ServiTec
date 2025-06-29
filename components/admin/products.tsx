@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -17,7 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Package, Plus, Edit, Trash2, AlertTriangle, CheckCircle } from "lucide-react"
+import { Package, Plus, Edit, Trash2, AlertTriangle, CheckCircle, Upload, X, Eye } from "lucide-react"
 import { productosService, type Product } from "@/lib/firebase-services"
 
 export default function AdminProducts() {
@@ -30,6 +32,10 @@ export default function AdminProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [newProduct, setNewProduct] = useState<Partial<Product>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [productImages, setProductImages] = useState<string[]>([])
+  const [specifications, setSpecifications] = useState<{ key: string; value: string }[]>([{ key: "", value: "" }])
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
 
@@ -90,8 +96,58 @@ export default function AdminProducts() {
     setFilteredProducts(filtered)
   }
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      // Crear URL temporal para preview
+      const imageUrl = URL.createObjectURL(file)
+      setProductImages([...productImages, imageUrl])
+
+      // En un caso real, aquí subirías el archivo a un servicio como Firebase Storage
+      // Por ahora usamos la URL temporal
+      toast({
+        title: "Imagen agregada",
+        description: "La imagen se ha agregado temporalmente. En producción se subiría a Firebase Storage.",
+      })
+    }
+  }
+
+  const addImageUrl = () => {
+    setProductImages([...productImages, ""])
+  }
+
+  const updateImageUrl = (index: number, url: string) => {
+    const newImages = [...productImages]
+    newImages[index] = url
+    setProductImages(newImages)
+  }
+
+  const removeImageUrl = (index: number) => {
+    setProductImages(productImages.filter((_, i) => i !== index))
+  }
+
+  const addSpecification = () => {
+    setSpecifications([...specifications, { key: "", value: "" }])
+  }
+
+  const updateSpecification = (index: number, field: "key" | "value", value: string) => {
+    const newSpecs = [...specifications]
+    newSpecs[index][field] = value
+    setSpecifications(newSpecs)
+  }
+
+  const removeSpecification = (index: number) => {
+    setSpecifications(specifications.filter((_, i) => i !== index))
+  }
+
+  const resetForm = () => {
+    setNewProduct({})
+    setProductImages([])
+    setSpecifications([{ key: "", value: "" }])
+  }
+
   const addProduct = async () => {
-    console.log("��� === INICIANDO CREACIÓN DE PRODUCTO DESDE COMPONENTS ===")
+    console.log("🚀 === INICIANDO CREACIÓN DE PRODUCTO DESDE COMPONENTS ===")
     console.log("📝 Datos del formulario:", newProduct)
 
     // Validación de campos requeridos
@@ -129,16 +185,28 @@ export default function AdminProducts() {
       setIsSubmitting(true)
       console.log("🔥 Preparando datos para Firebase...")
 
+      // Procesar especificaciones
+      const processedSpecs = {}
+      specifications.forEach((spec) => {
+        if (spec.key.trim() && spec.value.trim()) {
+          processedSpecs[spec.key.trim()] = spec.value.trim()
+        }
+      })
+
+      // Filtrar imágenes válidas
+      const validImages = productImages.filter((img) => img.trim())
+      const mainImage = validImages[0] || "/placeholder.svg?height=300&width=300"
+
       const productData = {
         name: newProduct.name.trim(),
         description: newProduct.description?.trim() || "",
         price: Number(newProduct.price),
-        originalPrice: Number(newProduct.price) * 1.2, // 20% más como precio original
+        originalPrice: Number(newProduct.originalPrice) || Number(newProduct.price) * 1.2,
         stock: Number(newProduct.stock) || 0,
         category: newProduct.category.trim(),
         brand: newProduct.brand?.trim() || "Sin especificar",
-        image: newProduct.image?.trim() || "/placeholder.svg?height=300&width=300",
-        images: [newProduct.image?.trim() || "/placeholder.svg?height=600&width=600"],
+        image: mainImage,
+        images: validImages.length > 0 ? validImages : [mainImage],
         rating: 4.5,
         reviews: 0,
         isNew: true,
@@ -146,11 +214,11 @@ export default function AdminProducts() {
         specifications: {
           Marca: newProduct.brand?.trim() || "Sin especificar",
           Descripción: newProduct.description?.trim() || "",
+          ...processedSpecs,
         },
       }
 
       console.log("📦 Datos preparados para Firebase:", productData)
-      console.log("🎯 Usando productosService.createProduct() que escribe en colección 'productos'")
 
       const productId = await productosService.createProduct(productData)
       console.log("🎉 ¡PRODUCTO CREADO EXITOSAMENTE! ID:", productId)
@@ -159,7 +227,7 @@ export default function AdminProducts() {
       await loadProducts()
 
       // Limpiar formulario y cerrar modal
-      setNewProduct({})
+      resetForm()
       setIsAddingProduct(false)
 
       toast({
@@ -168,11 +236,6 @@ export default function AdminProducts() {
       })
     } catch (error) {
       console.error("💥 Error completo al agregar producto:", error)
-      console.error("🔍 Detalles del error:", {
-        message: error.message,
-        code: error.code,
-        stack: error.stack,
-      })
       toast({
         title: "Error",
         description: `No se pudo agregar el producto: ${error instanceof Error ? error.message : "Error desconocido"}`,
@@ -283,12 +346,13 @@ export default function AdminProducts() {
               Agregar Producto
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Agregar Nuevo Producto</DialogTitle>
               <DialogDescription>Completa la información del producto para agregarlo al inventario</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Información básica */}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Nombre *</Label>
@@ -331,13 +395,15 @@ export default function AdminProducts() {
               <div className="space-y-2">
                 <Label>Descripción</Label>
                 <Textarea
-                  placeholder="Descripción del producto"
+                  placeholder="Descripción detallada del producto"
                   value={newProduct.description || ""}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                  rows={4}
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              {/* Precios y stock */}
+              <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">
                   <Label>Precio *</Label>
                   <Input
@@ -347,6 +413,19 @@ export default function AdminProducts() {
                     step="0.01"
                     value={newProduct.price || ""}
                     onChange={(e) => setNewProduct({ ...newProduct, price: Number.parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Precio Original</Label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    min="0"
+                    step="0.01"
+                    value={newProduct.originalPrice || ""}
+                    onChange={(e) =>
+                      setNewProduct({ ...newProduct, originalPrice: Number.parseFloat(e.target.value) || 0 })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -361,13 +440,71 @@ export default function AdminProducts() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>URL de Imagen</Label>
-                <Input
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  value={newProduct.image || ""}
-                  onChange={(e) => setNewProduct({ ...newProduct, image: e.target.value })}
-                />
+              {/* Imágenes */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Imágenes del Producto</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" onClick={() => fileInputRef.current?.click()} size="sm" variant="outline">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Subir Archivo
+                    </Button>
+                    <Button type="button" onClick={addImageUrl} size="sm" variant="outline">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Agregar URL
+                    </Button>
+                  </div>
+                </div>
+
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+
+                {productImages.map((image, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      placeholder="URL de la imagen"
+                      value={image}
+                      onChange={(e) => updateImageUrl(index, e.target.value)}
+                    />
+                    <Button type="button" onClick={() => removeImageUrl(index)} size="sm" variant="outline">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {productImages.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Sube archivos de imagen o agrega URLs. La primera imagen será la principal.
+                  </p>
+                )}
+              </div>
+
+              {/* Especificaciones */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Especificaciones Técnicas</Label>
+                  <Button type="button" onClick={addSpecification} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar Especificación
+                  </Button>
+                </div>
+                {specifications.map((spec, index) => (
+                  <div key={index} className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Característica (ej: Procesador)"
+                      value={spec.key}
+                      onChange={(e) => updateSpecification(index, "key", e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Valor (ej: Intel Core i7)"
+                        value={spec.value}
+                        onChange={(e) => updateSpecification(index, "value", e.target.value)}
+                      />
+                      <Button type="button" onClick={() => removeSpecification(index)} size="sm" variant="outline">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="flex justify-end gap-2">
@@ -375,7 +512,7 @@ export default function AdminProducts() {
                   variant="outline"
                   onClick={() => {
                     setIsAddingProduct(false)
-                    setNewProduct({})
+                    resetForm()
                   }}
                   disabled={isSubmitting}
                 >
@@ -395,64 +532,64 @@ export default function AdminProducts() {
         </Dialog>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid gap-4 md:grid-cols-5">
+      {/* Estadísticas - Responsive */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Total</p>
-                <p className="text-2xl font-bold text-white">{stats.total}</p>
+                <p className="text-xs font-medium text-white/70">Total</p>
+                <p className="text-lg lg:text-2xl font-bold text-white">{stats.total}</p>
               </div>
-              <Package className="h-8 w-8 text-blue-400" />
+              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Activos</p>
-                <p className="text-2xl font-bold text-green-400">{stats.active}</p>
+                <p className="text-xs font-medium text-white/70">Activos</p>
+                <p className="text-lg lg:text-2xl font-bold text-green-400">{stats.active}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-400" />
+              <CheckCircle className="h-6 w-6 lg:h-8 lg:w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Inactivos</p>
-                <p className="text-2xl font-bold text-red-400">{stats.inactive}</p>
+                <p className="text-xs font-medium text-white/70">Inactivos</p>
+                <p className="text-lg lg:text-2xl font-bold text-red-400">{stats.inactive}</p>
               </div>
-              <Package className="h-8 w-8 text-red-400" />
+              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-red-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Stock Bajo</p>
-                <p className="text-2xl font-bold text-orange-400">{stats.lowStock}</p>
+                <p className="text-xs font-medium text-white/70">Stock Bajo</p>
+                <p className="text-lg lg:text-2xl font-bold text-orange-400">{stats.lowStock}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-orange-400" />
+              <AlertTriangle className="h-6 w-6 lg:h-8 lg:w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Valor Total</p>
-                <p className="text-xl font-bold text-purple-400">${stats.totalValue.toLocaleString()}</p>
+                <p className="text-xs font-medium text-white/70">Valor Total</p>
+                <p className="text-sm lg:text-xl font-bold text-purple-400">${stats.totalValue.toLocaleString()}</p>
               </div>
-              <Package className="h-8 w-8 text-purple-400" />
+              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-purple-400" />
             </div>
           </CardContent>
         </Card>
@@ -513,13 +650,13 @@ export default function AdminProducts() {
         </CardContent>
       </Card>
 
-      {/* Lista de productos */}
+      {/* Lista de productos - Responsive Grid */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
           <CardTitle className="text-white">Productos ({filteredProducts.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
             {filteredProducts.length === 0 ? (
               <div className="col-span-full text-center py-8 text-white/70">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -532,8 +669,8 @@ export default function AdminProducts() {
             ) : (
               filteredProducts.map((product) => (
                 <Card key={product.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
+                  <CardContent className="p-3">
+                    <div className="space-y-2">
                       <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-100">
                         <img
                           src={product.image || "/placeholder.svg"}
@@ -544,30 +681,30 @@ export default function AdminProducts() {
 
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
-                          <h3 className="font-semibold text-lg line-clamp-1 text-white">{product.name}</h3>
-                          <div className="flex gap-1">
-                            <Badge variant={product.isActive ? "default" : "secondary"}>
+                          <h3 className="font-semibold text-xs line-clamp-2 text-white">{product.name}</h3>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant={product.isActive ? "default" : "secondary"} className="text-xs">
                               {product.isActive ? "Activo" : "Inactivo"}
                             </Badge>
                             {product.stock <= 5 && (
-                              <Badge variant="destructive" className="flex items-center gap-1">
-                                <AlertTriangle className="w-3 h-3" />
-                                Stock Bajo
+                              <Badge variant="destructive" className="flex items-center gap-1 text-xs">
+                                <AlertTriangle className="w-2 h-2" />
+                                Bajo
                               </Badge>
                             )}
                           </div>
                         </div>
 
-                        <p className="text-sm text-white/70 line-clamp-2">{product.description}</p>
+                        <p className="text-xs text-white/70 line-clamp-1">{product.description}</p>
 
                         <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-white/80 border-white/30">
+                          <Badge variant="outline" className="text-white/80 border-white/30 text-xs">
                             {product.category}
                           </Badge>
-                          <span className="text-lg font-bold text-green-400">${product.price.toLocaleString()}</span>
+                          <span className="text-xs font-bold text-green-400">${product.price.toLocaleString()}</span>
                         </div>
 
-                        <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center justify-between text-xs">
                           <span className="text-white/70">Stock: {product.stock}</span>
                           <span className="text-white/70">
                             {new Date(product.createdAt).toLocaleDateString("es-AR")}
@@ -575,17 +712,82 @@ export default function AdminProducts() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20"
+                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1"
+                              onClick={() => setSelectedProduct(product)}
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Detalles del Producto</DialogTitle>
+                            </DialogHeader>
+                            {selectedProduct && (
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <img
+                                      src={selectedProduct.image || "/placeholder.svg"}
+                                      alt={selectedProduct.name}
+                                      className="w-full h-64 object-cover rounded-lg"
+                                    />
+                                  </div>
+                                  <div className="space-y-3">
+                                    <h3 className="text-xl font-bold">{selectedProduct.name}</h3>
+                                    <p className="text-gray-600">{selectedProduct.description}</p>
+                                    <div className="space-y-2">
+                                      <p>
+                                        <strong>Categoría:</strong> {selectedProduct.category}
+                                      </p>
+                                      <p>
+                                        <strong>Marca:</strong> {selectedProduct.brand}
+                                      </p>
+                                      <p>
+                                        <strong>Precio:</strong> ${selectedProduct.price.toLocaleString()}
+                                      </p>
+                                      <p>
+                                        <strong>Stock:</strong> {selectedProduct.stock}
+                                      </p>
+                                      <p>
+                                        <strong>Estado:</strong> {selectedProduct.isActive ? "Activo" : "Inactivo"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                                {selectedProduct.specifications &&
+                                  Object.keys(selectedProduct.specifications).length > 0 && (
+                                    <div>
+                                      <h4 className="font-semibold mb-2">Especificaciones</h4>
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                        {Object.entries(selectedProduct.specifications).map(([key, value]) => (
+                                          <div key={key} className="flex justify-between p-2 bg-gray-50 rounded">
+                                            <span className="font-medium">{key}:</span>
+                                            <span>{value}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1"
                               onClick={() => setEditingProduct(product)}
                             >
-                              <Edit className="h-4 w-4 mr-1" />
-                              Editar
+                              <Edit className="h-3 w-3" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
@@ -688,12 +890,18 @@ export default function AdminProducts() {
                           size="sm"
                           variant={product.isActive ? "destructive" : "default"}
                           onClick={() => toggleProductStatus(product.id!)}
+                          className="text-xs p-1"
                         >
-                          {product.isActive ? "Desactivar" : "Activar"}
+                          {product.isActive ? "Des" : "Act"}
                         </Button>
 
-                        <Button size="sm" variant="destructive" onClick={() => deleteProduct(product.id!)}>
-                          <Trash2 className="h-4 w-4" />
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteProduct(product.id!)}
+                          className="p-1"
+                        >
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>

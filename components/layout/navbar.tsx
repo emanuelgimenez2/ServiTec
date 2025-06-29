@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, ShoppingCart, User, Heart, Shield } from "lucide-react"
+import { Menu, X, ShoppingCart, User, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { onAuthStateChanged } from "firebase/auth"
@@ -201,16 +201,16 @@ export default function Navbar() {
 
           {/* User Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/wishlist">
+            {/*<Link href="/wishlist">
               <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative">
                 <Heart className="w-5 h-5" />
                 {wishlistItems > 0 && (
                   <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center p-0">
                     {wishlistItems}
                   </Badge>
-                )}
+                )
               </Button>
-            </Link>
+            </Link>*/}
             <Link href="/carrito">
               <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative">
                 <ShoppingCart className="w-5 h-5" />
@@ -282,37 +282,42 @@ export default function Navbar() {
               >
                 Inicio
               </Link>
+
+              {/* Servicios */}
               <div className="space-y-2">
                 <span className="block text-white font-medium">Servicios</span>
-                <Link
-                  href="/servicios/reparacion"
-                  className="block pl-4 text-white/80 hover:text-orange-400 transition-colors"
-                  onClick={handleMobileNavClick}
-                >
-                  Reparación de Computadoras
-                </Link>
-                <Link
-                  href="/servicios/starlink"
-                  className="block pl-4 text-white/80 hover:text-orange-400 transition-colors"
-                  onClick={handleMobileNavClick}
-                >
-                  Instalación Starlink
-                </Link>
-                <Link
-                  href="/servicios/camaras"
-                  className="block pl-4 text-white/80 hover:text-orange-400 transition-colors"
-                  onClick={handleMobileNavClick}
-                >
-                  Instalación de Cámaras
-                </Link>
-                <Link
-                  href="/servicios/desarrollo"
-                  className="block pl-4 text-white/80 hover:text-orange-400 transition-colors"
-                  onClick={handleMobileNavClick}
-                >
-                  Desarrollo Web
-                </Link>
+                <div className="pl-4 space-y-2">
+                  <Link
+                    href="/servicios/reparacion"
+                    className="block text-white/80 hover:text-orange-400 transition-colors text-sm"
+                    onClick={handleMobileNavClick}
+                  >
+                    Reparación de Computadoras
+                  </Link>
+                  <Link
+                    href="/servicios/starlink"
+                    className="block text-white/80 hover:text-orange-400 transition-colors text-sm"
+                    onClick={handleMobileNavClick}
+                  >
+                    Instalación Starlink
+                  </Link>
+                  <Link
+                    href="/servicios/camaras"
+                    className="block text-white/80 hover:text-orange-400 transition-colors text-sm"
+                    onClick={handleMobileNavClick}
+                  >
+                    Instalación de Cámaras
+                  </Link>
+                  <Link
+                    href="/servicios/desarrollo"
+                    className="block text-white/80 hover:text-orange-400 transition-colors text-sm"
+                    onClick={handleMobileNavClick}
+                  >
+                    Desarrollo Web
+                  </Link>
+                </div>
               </div>
+
               <Link
                 href="/tienda"
                 className="block text-white hover:text-orange-400 transition-colors"
@@ -334,61 +339,79 @@ export default function Navbar() {
               >
                 Contacto
               </Link>
-              <div className="pt-4 border-t border-white/20">
-                <div className="flex space-x-4">
-                  <Link href="/wishlist" onClick={handleMobileNavClick}>
-                    <Button variant="ghost" size="sm" className="text-white hover:text-orange-400">
-                      <Heart className="w-5 h-5" />
-                      <span className="ml-1">Lista ({wishlistItems})</span>
-                    </Button>
-                  </Link>
+
+              {/* Separador */}
+              <div className="border-t border-white/20 pt-4">
+                {/* Carrito y Usuario */}
+                <div className="space-y-3">
                   <Link href="/carrito" onClick={handleMobileNavClick}>
-                    <Button variant="ghost" size="sm" className="text-white hover:text-orange-400">
-                      <ShoppingCart className="w-5 h-5" />
-                      <span className="ml-1">Carrito ({cartItems})</span>
+                    <Button variant="ghost" size="sm" className="w-full justify-start text-white hover:text-orange-400">
+                      <ShoppingCart className="w-5 h-5 mr-2" />
+                      <span>Carrito ({cartItems})</span>
                     </Button>
                   </Link>
+
                   {user ? (
-                    <div className="flex flex-col space-y-2">
-                      <Button variant="ghost" size="sm" className="text-white hover:text-orange-400">
-                        <User className="w-5 h-5" />
-                        <span className="ml-1">{user.name}</span>
-                      </Button>
-                      <Link href="/perfil" onClick={handleMobileNavClick}>
-                        <Button variant="ghost" size="sm" className="text-white hover:text-orange-400">
-                          Mi Perfil
-                        </Button>
-                      </Link>
-                      <Link href="/mis-turnos" onClick={handleMobileNavClick}>
-                        <Button variant="ghost" size="sm" className="text-white hover:text-orange-400">
-                          Mis Turnos
-                        </Button>
-                      </Link>
-                      {user.role === "administrador" && (
-                        <Link href="/admin" onClick={handleMobileNavClick}>
-                          <Button variant="ghost" size="sm" className="text-white hover:text-orange-400">
-                            <Shield className="w-5 h-5" />
-                            <span className="ml-1">Admin</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center text-white">
+                        <User className="w-5 h-5 mr-2" />
+                        <span>{user.name}</span>
+                        {user.role === "administrador" && <Shield className="w-4 h-4 ml-2 text-yellow-400" />}
+                      </div>
+
+                      <div className="pl-7 space-y-2">
+                        <Link href="/perfil" onClick={handleMobileNavClick}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                          >
+                            Mi Perfil
                           </Button>
                         </Link>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-white hover:text-orange-400"
-                        onClick={() => {
-                          handleSignOut()
-                          handleMobileNavClick()
-                        }}
-                      >
-                        Cerrar Sesión
-                      </Button>
+                        <Link href="/mis-turnos" onClick={handleMobileNavClick}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                          >
+                            Mis Turnos
+                          </Button>
+                        </Link>
+                        {user.role === "administrador" && (
+                          <Link href="/admin" onClick={handleMobileNavClick}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                            >
+                              <Shield className="w-4 h-4 mr-2 text-yellow-600" />
+                              Panel Admin
+                            </Button>
+                          </Link>
+                        )}
+                        <Button
+                          onClick={() => {
+                            handleSignOut()
+                            handleMobileNavClick()
+                          }}
+                          variant="ghost"
+                          size="sm"
+                          className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                        >
+                          Cerrar Sesión
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <Link href="/auth" onClick={handleMobileNavClick}>
-                      <Button variant="ghost" size="sm" className="text-white hover:text-orange-400">
-                        <User className="w-5 h-5" />
-                        <span className="ml-1">Ingresar</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-white hover:text-orange-400"
+                      >
+                        <User className="w-5 h-5 mr-2" />
+                        Ingresar
                       </Button>
                     </Link>
                   )}

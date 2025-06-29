@@ -78,7 +78,7 @@ export default function Footer() {
 
         {/* Bottom Section */}
         <div className="border-t border-white/20 mt-12 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-center md:text-left">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-center md:text-center">
             <div className="text-sm text-white/70 text-center md:text-right">
               <p>&copy; 2024 ServiTec. Todos los derechos reservados.</p>
               <p className="mt-1">Desarrollado con ❤️ en Argentina</p>

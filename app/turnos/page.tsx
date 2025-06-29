@@ -1,218 +1,216 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Calendar, Clock, User, Phone, Mail, MapPin, CheckCircle, ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import type React from "react"
+
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { Calendar, Clock, User, Phone, MapPin, Wrench, Camera, Wifi, Code, CheckCircle, Star } from "lucide-react"
 import { turnosService } from "@/lib/firebase-services"
-import { onAuthStateChanged } from "firebase/auth"
-import { auth } from "@/lib/firebase"
-import { getUserDocument } from "@/lib/auth-service"
 
-const services = [
+interface Service {
+  id: string
+  name: string
+  description: string
+  duration: number
+  price: number
+  category: string
+  icon: React.ReactNode
+  features: string[]
+  rating: number
+  reviews: number
+}
+
+interface AppointmentForm {
+  name: string
+  phone: string
+  email: string
+  address: string
+  serviceId: string
+  date: string
+  time: string
+  notes: string
+}
+
+const services: Service[] = [
   {
-    id: "reparacion",
-    name: "Reparación de Computadoras",
+    id: "reparacion-pc",
+    name: "Reparación de PC",
+    description: "Diagnóstico y reparación completa de computadoras de escritorio y notebooks",
     duration: 120,
     price: 15000,
-    description: "Diagnóstico y reparación completa de equipos",
+    category: "Reparación",
+    icon: <Wrench className="h-6 w-6" />,
+    features: [
+      "Diagnóstico completo",
+      "Limpieza interna",
+      "Actualización de software",
+      "Instalación de programas",
+      "Garantía de 30 días",
+    ],
+    rating: 4.8,
+    reviews: 127,
   },
   {
-    id: "starlink",
+    id: "instalacion-starlink",
     name: "Instalación Starlink",
+    description: "Instalación profesional de internet satelital Starlink con configuración completa",
     duration: 180,
     price: 25000,
-    description: "Instalación completa de internet satelital",
+    category: "Internet",
+    icon: <Wifi className="h-6 w-6" />,
+    features: [
+      "Instalación de antena",
+      "Configuración de red",
+      "Optimización de señal",
+      "Capacitación de uso",
+      "Soporte post-instalación",
+    ],
+    rating: 4.9,
+    reviews: 89,
   },
   {
-    id: "camaras",
-    name: "Instalación de Cámaras",
+    id: "camaras-seguridad",
+    name: "Cámaras de Seguridad",
+    description: "Instalación y configuración de sistemas de videovigilancia para hogares y empresas",
     duration: 240,
     price: 35000,
-    description: "Sistema completo de videovigilancia",
+    category: "Seguridad",
+    icon: <Camera className="h-6 w-6" />,
+    features: ["Cámaras HD/4K", "Visión nocturna", "Acceso remoto", "Grabación en la nube", "Monitoreo 24/7"],
+    rating: 4.7,
+    reviews: 156,
   },
   {
-    id: "desarrollo",
+    id: "desarrollo-web",
     name: "Desarrollo Web",
-    duration: 60,
-    price: 20000,
-    description: "Consultoría y desarrollo de sitios web",
-  },
-  {
-    id: "consultoria",
-    name: "Consultoría Técnica",
-    duration: 60,
-    price: 8000,
-    description: "Asesoramiento técnico especializado",
+    description: "Creación de sitios web profesionales y aplicaciones web personalizadas",
+    duration: 480,
+    price: 50000,
+    category: "Desarrollo",
+    icon: <Code className="h-6 w-6" />,
+    features: [
+      "Diseño responsive",
+      "SEO optimizado",
+      "Panel de administración",
+      "Hosting incluido",
+      "Mantenimiento mensual",
+    ],
+    rating: 5.0,
+    reviews: 43,
   },
 ]
 
-const timeSlots = [
-  "08:00",
-  "09:00",
-  "10:00",
-  "11:00",
-  "12:00",
-  "14:00",
-  "15:00",
-  "16:00",
-  "17:00",
-  "18:00",
-  "19:00",
-  "20:00",
-]
+const timeSlots = ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"]
 
 export default function TurnosPage() {
-  const [user, setUser] = useState(null)
-  const [step, setStep] = useState(1)
-  const [selectedService, setSelectedService] = useState("")
-  const [selectedDate, setSelectedDate] = useState("")
-  const [selectedTime, setSelectedTime] = useState("")
-  const [availableDates, setAvailableDates] = useState([])
-  const [availableTimes, setAvailableTimes] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
+  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [appointmentForm, setAppointmentForm] = useState<AppointmentForm>({
     name: "",
-    email: "",
     phone: "",
+    email: "",
     address: "",
+    serviceId: "",
+    date: "",
+    time: "",
     notes: "",
   })
-  const router = useRouter()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterCategory, setFilterCategory] = useState<string>("all")
   const { toast } = useToast()
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push("/auth")
-        return
-      }
+  const filteredServices = services.filter((service) => {
+    const matchesSearch =
+      service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      service.description.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = filterCategory === "all" || service.category === filterCategory
+    return matchesSearch && matchesCategory
+  })
 
-      const userData = await getUserDocument(user.uid)
-      if (userData) {
-        setUser(userData)
-
-        // Pre-fill form with user data
-        setFormData({
-          name: userData.name || "",
-          email: userData.email || "",
-          phone: userData.phone || "",
-          address: userData.address || "",
-          notes: "",
-        })
-
-        // Generate available dates
-        generateAvailableDates()
-      }
-    })
-
-    return () => unsubscribe()
-  }, [router])
-
-  const generateAvailableDates = () => {
-    const dates = []
-    const today = new Date()
-
-    for (let i = 1; i <= 30; i++) {
-      const date = new Date(today)
-      date.setDate(today.getDate() + i)
-
-      // Skip Sundays (0 = Sunday)
-      if (date.getDay() !== 0) {
-        dates.push({
-          value: date.toISOString().split("T")[0],
-          label: date.toLocaleDateString("es-AR", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }),
-        })
-      }
-    }
-
-    setAvailableDates(dates)
+  const handleServiceSelect = (service: Service) => {
+    setSelectedService(service)
+    setAppointmentForm({ ...appointmentForm, serviceId: service.id })
   }
 
-  const checkAvailableTimes = async (date, serviceId) => {
-    try {
-      // Get existing appointments for the selected date
-      const appointments = await turnosService.getAllAppointments()
-      const dateAppointments = appointments.filter((apt) => apt.date === date)
-      const bookedTimes = dateAppointments.map((apt) => apt.time)
-
-      // Filter available times
-      const available = timeSlots.filter((time) => !bookedTimes.includes(time))
-      setAvailableTimes(available)
-    } catch (error) {
-      console.error("Error checking available times:", error)
-      setAvailableTimes(timeSlots)
-    }
-  }
-
-  const handleServiceSelect = (serviceId) => {
-    setSelectedService(serviceId)
-    setStep(2)
-  }
-
-  const handleDateSelect = (date) => {
-    setSelectedDate(date)
-    checkAvailableTimes(date, selectedService)
-    setStep(3)
-  }
-
-  const handleTimeSelect = (time) => {
-    setSelectedTime(time)
-    setStep(4)
-  }
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
 
-    const service = services.find((s) => s.id === selectedService)
-
-    const appointmentData = {
-      userId: user.id,
-      serviceId: selectedService,
-      serviceName: service.name,
-      servicePrice: service.price,
-      serviceDuration: service.duration,
-      date: selectedDate,
-      time: selectedTime,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      address: formData.address,
-      notes: formData.notes,
+    if (!selectedService) {
+      toast({
+        title: "Error",
+        description: "Por favor selecciona un servicio",
+        variant: "destructive",
+      })
+      return
     }
 
+    if (!appointmentForm.name || !appointmentForm.phone || !appointmentForm.date || !appointmentForm.time) {
+      toast({
+        title: "Error",
+        description: "Por favor completa todos los campos requeridos",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+
     try {
+      const appointmentData = {
+        userId: "current_user", // En producción usar el ID real del usuario
+        name: appointmentForm.name,
+        phone: appointmentForm.phone,
+        email: appointmentForm.email,
+        address: appointmentForm.address,
+        serviceName: selectedService.name,
+        servicePrice: selectedService.price,
+        serviceDuration: selectedService.duration,
+        date: appointmentForm.date,
+        time: appointmentForm.time,
+        status: "pending" as const,
+        notes: appointmentForm.notes,
+        createdAt: new Date().toISOString(),
+      }
+
       await turnosService.createAppointment(appointmentData)
 
       toast({
-        title: "¡Turno reservado!",
-        description: `Tu turno para ${service.name} ha sido reservado para el ${new Date(selectedDate).toLocaleDateString("es-AR")} a las ${selectedTime}.`,
+        title: "¡Turno agendado!",
+        description: `Tu turno para ${selectedService.name} ha sido agendado para el ${new Date(appointmentForm.date).toLocaleDateString("es-AR")} a las ${appointmentForm.time}`,
       })
 
-      setStep(5)
+      // Resetear formulario
+      setAppointmentForm({
+        name: "",
+        phone: "",
+        email: "",
+        address: "",
+        serviceId: "",
+        date: "",
+        time: "",
+        notes: "",
+      })
+      setSelectedService(null)
     } catch (error) {
+      console.error("Error creating appointment:", error)
       toast({
         title: "Error",
-        description: "Hubo un problema al reservar tu turno. Por favor, intenta nuevamente.",
+        description: "Hubo un problema al agendar tu turno. Inténtalo nuevamente.",
         variant: "destructive",
       })
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
-  const formatPrice = (price) => {
+  const formatPrice = (price: number) => {
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
@@ -220,338 +218,343 @@ export default function TurnosPage() {
     }).format(price)
   }
 
-  const resetForm = () => {
-    setStep(1)
-    setSelectedService("")
-    setSelectedDate("")
-    setSelectedTime("")
-    setFormData({
-      name: user?.name || "",
-      email: user?.email || "",
-      phone: user?.phone || "",
-      address: user?.address || "",
-      notes: "",
-    })
+  const formatDuration = (minutes: number) => {
+    const hours = Math.floor(minutes / 60)
+    const mins = minutes % 60
+    if (hours > 0 && mins > 0) {
+      return `${hours}h ${mins}min`
+    } else if (hours > 0) {
+      return `${hours}h`
+    } else {
+      return `${mins}min`
+    }
   }
 
-  if (!user) {
-    return <div>Cargando...</div>
-  }
+  const categories = [...new Set(services.map((s) => s.category))]
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center mb-8">
-          <Button variant="ghost" onClick={() => router.back()} className="mr-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Reservar Turno</h1>
-            <p className="text-gray-600">Agenda tu cita con nuestros especialistas</p>
-          </div>
-        </div>
-
-        {/* Progress Steps */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <div className="flex items-center justify-center space-x-4">
-            {[1, 2, 3, 4, 5].map((stepNumber) => (
-              <div key={stepNumber} className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    step >= stepNumber
-                      ? "bg-gradient-to-r from-orange-500 to-red-500 text-white"
-                      : "bg-gray-200 text-gray-600"
-                  }`}
-                >
-                  {stepNumber === 5 && step >= 5 ? <CheckCircle className="w-5 h-5" /> : stepNumber}
-                </div>
-                {stepNumber < 5 && (
-                  <div
-                    className={`w-12 h-1 mx-2 ${
-                      step > stepNumber ? "bg-gradient-to-r from-orange-500 to-red-500" : "bg-gray-200"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-center mt-4">
-            <div className="text-sm text-gray-600">
-              {step === 1 && "Selecciona un servicio"}
-              {step === 2 && "Elige una fecha"}
-              {step === 3 && "Selecciona horario"}
-              {step === 4 && "Completa tus datos"}
-              {step === 5 && "¡Turno confirmado!"}
-            </div>
-          </div>
+          <h1 className="text-4xl font-bold text-white mb-2">Agendar Turno</h1>
+          <p className="text-white/70">Selecciona un servicio y agenda tu cita</p>
         </div>
 
-        {/* Step 1: Service Selection */}
-        {step === 1 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {services.map((service) => (
-              <Card
-                key={service.id}
-                className="cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-105"
-              >
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>{service.name}</span>
-                    <span className="text-lg font-bold text-orange-600">{formatPrice(service.price)}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-gray-600 mb-4">{service.description}</p>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {service.duration} minutos
-                    </div>
+        {!selectedService ? (
+          <div className="space-y-6">
+            {/* Filtros */}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white">Buscar Servicios</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-white/90">Buscar</Label>
+                    <Input
+                      placeholder="Buscar servicios..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    />
                   </div>
-                  <Button
-                    onClick={() => handleServiceSelect(service.id)}
-                    className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-                  >
-                    Seleccionar Servicio
-                  </Button>
+                  <div className="space-y-2">
+                    <Label className="text-white/90">Categoría</Label>
+                    <Select value={filterCategory} onValueChange={setFilterCategory}>
+                      <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                        <SelectValue placeholder="Todas las categorías" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas las categorías</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lista de servicios */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
+              {filteredServices.map((service) => (
+                <Card
+                  key={service.id}
+                  className="bg-white/10 backdrop-blur-sm border-white/20 hover:bg-white/15 transition-all cursor-pointer group"
+                >
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white">
+                          {service.icon}
+                        </div>
+                        <div>
+                          <CardTitle className="text-white group-hover:text-blue-300 transition-colors">
+                            {service.name}
+                          </CardTitle>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-white/80 border-white/30 text-xs">
+                              {service.category}
+                            </Badge>
+                            <div className="flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                              <span className="text-xs text-white/70">
+                                {service.rating} ({service.reviews})
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-400">{formatPrice(service.price)}</div>
+                        <div className="text-sm text-white/70 flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatDuration(service.duration)}
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-white/80 text-sm">{service.description}</p>
+
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold text-white">Incluye:</h4>
+                      <ul className="space-y-1">
+                        {service.features.map((feature, index) => (
+                          <li key={index} className="text-xs text-white/70 flex items-center">
+                            <CheckCircle className="h-3 w-3 text-green-400 mr-2 flex-shrink-0" />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <Button
+                      onClick={() => handleServiceSelect(service)}
+                      className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Agendar Turno
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {filteredServices.length === 0 && (
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-8 text-center">
+                  <Calendar className="h-16 w-16 mx-auto mb-4 text-white/50" />
+                  <h2 className="text-2xl font-bold text-white mb-2">No se encontraron servicios</h2>
+                  <p className="text-white/70">Intenta con otros términos de búsqueda</p>
                 </CardContent>
               </Card>
-            ))}
+            )}
           </div>
-        )}
-
-        {/* Step 2: Date Selection */}
-        {step === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Calendar className="w-5 h-5 mr-2" />
-                Selecciona una fecha
-              </CardTitle>
-              <p className="text-gray-600">Servicio: {services.find((s) => s.id === selectedService)?.name}</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {availableDates.map((date) => (
-                  <Button
-                    key={date.value}
-                    variant="outline"
-                    onClick={() => handleDateSelect(date.value)}
-                    className="p-4 h-auto text-left hover:bg-orange-50 hover:border-orange-300"
-                  >
-                    <div>
-                      <div className="font-medium">{date.label.split(",")[0]}</div>
-                      <div className="text-sm text-gray-600">{date.label.split(",").slice(1).join(",")}</div>
-                    </div>
-                  </Button>
-                ))}
-              </div>
-              <div className="mt-6">
-                <Button variant="outline" onClick={() => setStep(1)}>
-                  Volver a Servicios
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 3: Time Selection */}
-        {step === 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="w-5 h-5 mr-2" />
-                Selecciona un horario
-              </CardTitle>
-              <p className="text-gray-600">
-                {services.find((s) => s.id === selectedService)?.name} -{" "}
-                {availableDates.find((d) => d.value === selectedDate)?.label}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {availableTimes.map((time) => (
-                  <Button
-                    key={time}
-                    variant="outline"
-                    onClick={() => handleTimeSelect(time)}
-                    className="p-4 hover:bg-orange-50 hover:border-orange-300"
-                  >
-                    {time}
-                  </Button>
-                ))}
-              </div>
-              {availableTimes.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-gray-600">No hay horarios disponibles para esta fecha.</p>
-                  <Button variant="outline" onClick={() => setStep(2)} className="mt-4">
-                    Elegir otra fecha
-                  </Button>
-                </div>
-              )}
-              <div className="mt-6">
-                <Button variant="outline" onClick={() => setStep(2)}>
-                  Volver a Fechas
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 4: Form */}
-        {step === 4 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Completa tus datos</CardTitle>
-              <div className="text-sm text-gray-600">
-                <p>{services.find((s) => s.id === selectedService)?.name}</p>
-                <p>
-                  {availableDates.find((d) => d.value === selectedDate)?.label} a las {selectedTime}
-                </p>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="name">Nombre completo *</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
+        ) : (
+          /* Formulario de agendamiento */
+          <div className="grid gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white">Información del Turno</CardTitle>
+                    <Button
+                      variant="outline"
+                      onClick={() => setSelectedService(null)}
+                      className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    >
+                      Cambiar Servicio
+                    </Button>
                   </div>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-white/90">
+                          <User className="h-4 w-4 inline mr-1" />
+                          Nombre Completo *
+                        </Label>
+                        <Input
+                          placeholder="Tu nombre completo"
+                          value={appointmentForm.name}
+                          onChange={(e) => setAppointmentForm({ ...appointmentForm, name: e.target.value })}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white/90">
+                          <Phone className="h-4 w-4 inline mr-1" />
+                          Teléfono *
+                        </Label>
+                        <Input
+                          placeholder="Tu número de teléfono"
+                          value={appointmentForm.phone}
+                          onChange={(e) => setAppointmentForm({ ...appointmentForm, phone: e.target.value })}
+                          className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <div className="space-y-2">
+                      <Label className="text-white/90">Email</Label>
                       <Input
-                        id="email"
                         type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="pl-10"
-                        required
+                        placeholder="tu@email.com"
+                        value={appointmentForm.email}
+                        onChange={(e) => setAppointmentForm({ ...appointmentForm, email: e.target.value })}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <Label htmlFor="phone">Teléfono *</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <div className="space-y-2">
+                      <Label className="text-white/90">
+                        <MapPin className="h-4 w-4 inline mr-1" />
+                        Dirección
+                      </Label>
                       <Input
-                        id="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                        className="pl-10"
-                        required
+                        placeholder="Dirección donde se realizará el servicio"
+                        value={appointmentForm.address}
+                        onChange={(e) => setAppointmentForm({ ...appointmentForm, address: e.target.value })}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                       />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label className="text-white/90">
+                          <Calendar className="h-4 w-4 inline mr-1" />
+                          Fecha *
+                        </Label>
+                        <Input
+                          type="date"
+                          value={appointmentForm.date}
+                          onChange={(e) => setAppointmentForm({ ...appointmentForm, date: e.target.value })}
+                          className="bg-white/10 border-white/20 text-white"
+                          min={new Date().toISOString().split("T")[0]}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-white/90">
+                          <Clock className="h-4 w-4 inline mr-1" />
+                          Horario *
+                        </Label>
+                        <Select
+                          value={appointmentForm.time}
+                          onValueChange={(value) => setAppointmentForm({ ...appointmentForm, time: value })}
+                        >
+                          <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                            <SelectValue placeholder="Selecciona un horario" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeSlots.map((time) => (
+                              <SelectItem key={time} value={time}>
+                                {time}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-white/90">Notas adicionales</Label>
+                      <Textarea
+                        placeholder="Información adicional sobre el servicio..."
+                        value={appointmentForm.notes}
+                        onChange={(e) => setAppointmentForm({ ...appointmentForm, notes: e.target.value })}
+                        className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                        rows={4}
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white font-bold py-3"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Agendando...
+                        </>
+                      ) : (
+                        <>
+                          <Calendar className="h-5 w-5 mr-2" />
+                          Confirmar Turno
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Resumen del servicio */}
+            <div>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20 sticky top-4">
+                <CardHeader>
+                  <CardTitle className="text-white">Resumen del Servicio</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white">
+                      {selectedService.icon}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-white">{selectedService.name}</h3>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span className="text-xs text-white/70">
+                          {selectedService.rating} ({selectedService.reviews} reseñas)
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="address">Dirección</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="pl-10"
-                      />
+                  <p className="text-white/80 text-sm">{selectedService.description}</p>
+
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-white/80">
+                      <span>Duración:</span>
+                      <span>{formatDuration(selectedService.duration)}</span>
+                    </div>
+                    <div className="flex justify-between text-white/80">
+                      <span>Categoría:</span>
+                      <Badge variant="outline" className="text-white/80 border-white/30 text-xs">
+                        {selectedService.category}
+                      </Badge>
+                    </div>
+                    <div className="border-t border-white/20 pt-2">
+                      <div className="flex justify-between text-lg font-bold text-white">
+                        <span>Precio:</span>
+                        <span className="text-green-400">{formatPrice(selectedService.price)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="notes">Notas adicionales</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Describe brevemente el problema o servicio requerido..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="flex space-x-4">
-                  <Button type="button" variant="outline" onClick={() => setStep(3)}>
-                    Volver
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-                  >
-                    {loading ? "Reservando..." : "Confirmar Turno"}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 5: Confirmation */}
-        {step === 5 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">¡Turno Confirmado!</h2>
-              <div className="bg-gray-50 rounded-lg p-6 mb-6">
-                <h3 className="font-semibold mb-4">Detalles de tu turno:</h3>
-                <div className="space-y-2 text-left">
-                  <p>
-                    <strong>Servicio:</strong> {services.find((s) => s.id === selectedService)?.name}
-                  </p>
-                  <p>
-                    <strong>Fecha:</strong> {availableDates.find((d) => d.value === selectedDate)?.label}
-                  </p>
-                  <p>
-                    <strong>Fecha:</strong> {availableDates.find((d) => d.value === selectedDate)?.label}
-                  </p>
-                  <p>
-                    <strong>Hora:</strong> {selectedTime}
-                  </p>
-                  <p>
-                    <strong>Precio:</strong> {formatPrice(services.find((s) => s.id === selectedService)?.price)}
-                  </p>
-                  <p>
-                    <strong>Cliente:</strong> {formData.name}
-                  </p>
-                  <p>
-                    <strong>Teléfono:</strong> {formData.phone}
-                  </p>
-                </div>
-              </div>
-              <p className="text-gray-600 mb-6">
-                Recibirás una confirmación por WhatsApp y email. Nuestro equipo se pondrá en contacto contigo antes de
-                la cita.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={resetForm} variant="outline">
-                  Reservar Otro Turno
-                </Button>
-                <Button
-                  onClick={() => router.push("/")}
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-                >
-                  Volver al Inicio
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-white">Incluye:</h4>
+                    <ul className="space-y-1">
+                      {selectedService.features.map((feature, index) => (
+                        <li key={index} className="text-xs text-white/70 flex items-center">
+                          <CheckCircle className="h-3 w-3 text-green-400 mr-2 flex-shrink-0" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         )}
       </div>
     </div>

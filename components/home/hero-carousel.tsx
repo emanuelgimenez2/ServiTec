@@ -14,7 +14,7 @@ const slides = [
     icon: Monitor,
     buttonText: "Ver Servicios",
     buttonLink: "/servicios/reparacion",
-    image: "/placeholder.svg?height=600&width=800",
+    image: "/foto 1 pc.png",
     gradient: "from-blue-600 via-purple-600 to-orange-500",
   },
   {
@@ -25,7 +25,7 @@ const slides = [
     icon: Satellite,
     buttonText: "Contactar",
     buttonLink: "/contacto",
-    image: "/placeholder.svg?height=600&width=800",
+    image: "/foto 1 pc.png",
     gradient: "from-orange-500 via-red-500 to-purple-600",
   },
   {
@@ -36,7 +36,7 @@ const slides = [
     icon: Camera,
     buttonText: "Ver Instalaciones",
     buttonLink: "/servicios/camaras",
-    image: "/placeholder.svg?height=600&width=800",
+    image: "/foto 1 pc.png",
     gradient: "from-purple-600 via-blue-600 to-cyan-500",
   },
   {
@@ -47,7 +47,7 @@ const slides = [
     icon: Globe,
     buttonText: "Ver Catálogo",
     buttonLink: "/tienda",
-    image: "/placeholder.svg?height=600&width=800",
+    image: "/foto 1 pc.png",
     gradient: "from-cyan-500 via-blue-500 to-purple-600",
   },
 ]

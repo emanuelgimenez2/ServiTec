@@ -16,7 +16,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { ShoppingCart, Package, Truck, CheckCircle, XCircle, Clock, DollarSign, User, Edit, Trash2 } from "lucide-react"
+import { ShoppingCart, Package, Truck, CheckCircle, XCircle, Clock, DollarSign, User, Trash2, Eye } from "lucide-react"
+import { pedidosService } from "@/lib/firebase-services"
 
 interface OrderItem {
   id: string
@@ -48,7 +49,18 @@ export default function AdminOrders() {
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
   const { toast } = useToast()
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    handleResize()
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
 
   useEffect(() => {
     loadOrders()
@@ -58,9 +70,20 @@ export default function AdminOrders() {
     filterOrders()
   }, [orders, searchTerm, filterStatus])
 
-  const loadOrders = () => {
-    const savedOrders = JSON.parse(localStorage.getItem("admin_orders") || "[]")
-    setOrders(savedOrders)
+  const loadOrders = async () => {
+    try {
+      setLoading(true)
+      // Cargar desde Firebase
+      const ordersData = await pedidosService.getAllOrders()
+      setOrders(ordersData)
+    } catch (error) {
+      console.error("Error loading orders from Firebase:", error)
+      // Fallback a localStorage
+      const savedOrders = JSON.parse(localStorage.getItem("admin_orders") || "[]")
+      setOrders(savedOrders)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const filterOrders = () => {
@@ -83,78 +106,118 @@ export default function AdminOrders() {
     setFilteredOrders(filtered)
   }
 
-  const updateOrderStatus = (orderId: string, newStatus: "processing" | "shipped" | "delivered" | "cancelled") => {
-    const updatedOrders = orders.map((order) =>
-      order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date().toISOString() } : order,
-    )
-    setOrders(updatedOrders)
-    localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
+  const updateOrderStatus = async (
+    orderId: string,
+    newStatus: "processing" | "shipped" | "delivered" | "cancelled",
+  ) => {
+    try {
+      await pedidosService.updateOrderStatus(orderId, newStatus)
+      await loadOrders()
 
-    toast({
-      title: "Estado actualizado",
-      description: `Pedido ${newStatus === "processing" ? "en proceso" : newStatus === "shipped" ? "enviado" : newStatus === "delivered" ? "entregado" : "cancelado"}`,
-    })
+      toast({
+        title: "Estado actualizado",
+        description: `Pedido ${newStatus === "processing" ? "en proceso" : newStatus === "shipped" ? "enviado" : newStatus === "delivered" ? "entregado" : "cancelado"}`,
+      })
+    } catch (error) {
+      console.error("Error updating order:", error)
+      // Fallback a localStorage
+      const updatedOrders = orders.map((order) =>
+        order.id === orderId ? { ...order, status: newStatus, updatedAt: new Date().toISOString() } : order,
+      )
+      setOrders(updatedOrders)
+      localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
+
+      toast({
+        title: "Estado actualizado",
+        description: `Pedido ${newStatus === "processing" ? "en proceso" : newStatus === "shipped" ? "enviado" : newStatus === "delivered" ? "entregado" : "cancelado"}`,
+      })
+    }
   }
 
-  const updateOrder = () => {
+  const updateOrder = async () => {
     if (!editingOrder) return
 
-    const updatedOrders = orders.map((order) => (order.id === editingOrder.id ? editingOrder : order))
-    setOrders(updatedOrders)
-    localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
+    try {
+      await pedidosService.updateOrder(editingOrder.id, editingOrder)
+      await loadOrders()
 
-    setEditingOrder(null)
-    toast({
-      title: "Pedido actualizado",
-      description: "El pedido ha sido actualizado exitosamente",
-    })
+      setEditingOrder(null)
+      toast({
+        title: "Pedido actualizado",
+        description: "El pedido ha sido actualizado exitosamente",
+      })
+    } catch (error) {
+      console.error("Error updating order:", error)
+      // Fallback a localStorage
+      const updatedOrders = orders.map((order) => (order.id === editingOrder.id ? editingOrder : order))
+      setOrders(updatedOrders)
+      localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
+
+      setEditingOrder(null)
+      toast({
+        title: "Pedido actualizado",
+        description: "El pedido ha sido actualizado exitosamente",
+      })
+    }
   }
 
-  const deleteOrder = (orderId: string) => {
-    const updatedOrders = orders.filter((order) => order.id !== orderId)
-    setOrders(updatedOrders)
-    localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
+  const deleteOrder = async (orderId: string) => {
+    try {
+      await pedidosService.deleteOrder(orderId)
+      await loadOrders()
 
-    toast({
-      title: "Pedido eliminado",
-      description: "El pedido ha sido eliminado exitosamente",
-    })
+      toast({
+        title: "Pedido eliminado",
+        description: "El pedido ha sido eliminado exitosamente",
+      })
+    } catch (error) {
+      console.error("Error deleting order:", error)
+      // Fallback a localStorage
+      const updatedOrders = orders.filter((order) => order.id !== orderId)
+      setOrders(updatedOrders)
+      localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
+
+      toast({
+        title: "Pedido eliminado",
+        description: "El pedido ha sido eliminado exitosamente",
+      })
+    }
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
         return (
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
+          <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+            <Clock className="w-2 h-2" />
             Pendiente
           </Badge>
         )
       case "processing":
         return (
-          <Badge variant="default" className="bg-blue-500 flex items-center gap-1">
-            <Package className="w-3 h-3" />
+          <Badge variant="default" className="bg-blue-500 flex items-center gap-1 text-xs">
+            <Package className="w-2 h-2" />
             Procesando
           </Badge>
         )
       case "shipped":
         return (
-          <Badge variant="default" className="bg-orange-500 flex items-center gap-1">
-            <Truck className="w-3 h-3" />
+          <Badge variant="default" className="bg-orange-500 flex items-center gap-1 text-xs">
+            <Truck className="w-2 h-2" />
             Enviado
           </Badge>
         )
       case "delivered":
         return (
-          <Badge variant="default" className="bg-green-500 flex items-center gap-1">
-            <CheckCircle className="w-3 h-3" />
+          <Badge variant="default" className="bg-green-500 flex items-center gap-1 text-xs">
+            <CheckCircle className="w-2 h-2" />
             Entregado
           </Badge>
         )
       case "cancelled":
         return (
-          <Badge variant="destructive" className="flex items-center gap-1">
-            <XCircle className="w-3 h-3" />
+          <Badge variant="destructive" className="flex items-center gap-1 text-xs">
+            <XCircle className="w-2 h-2" />
             Cancelado
           </Badge>
         )
@@ -173,6 +236,16 @@ export default function AdminOrders() {
     totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
   }
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <p className="text-white/70">Cargando pedidos...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -182,76 +255,76 @@ export default function AdminOrders() {
         </div>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid gap-4 md:grid-cols-6">
+      {/* Estadísticas - Responsive */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-6">
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Total</p>
-                <p className="text-2xl font-bold text-white">{stats.total}</p>
+                <p className="text-xs font-medium text-white/70">Total</p>
+                <p className="text-lg lg:text-2xl font-bold text-white">{stats.total}</p>
               </div>
-              <ShoppingCart className="h-8 w-8 text-blue-400" />
+              <ShoppingCart className="h-6 w-6 lg:h-8 lg:w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Pendientes</p>
-                <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
+                <p className="text-xs font-medium text-white/70">Pendientes</p>
+                <p className="text-lg lg:text-2xl font-bold text-yellow-400">{stats.pending}</p>
               </div>
-              <Clock className="h-8 w-8 text-yellow-400" />
+              <Clock className="h-6 w-6 lg:h-8 lg:w-8 text-yellow-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Procesando</p>
-                <p className="text-2xl font-bold text-blue-400">{stats.processing}</p>
+                <p className="text-xs font-medium text-white/70">Procesando</p>
+                <p className="text-lg lg:text-2xl font-bold text-blue-400">{stats.processing}</p>
               </div>
-              <Package className="h-8 w-8 text-blue-400" />
+              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Enviados</p>
-                <p className="text-2xl font-bold text-orange-400">{stats.shipped}</p>
+                <p className="text-xs font-medium text-white/70">Enviados</p>
+                <p className="text-lg lg:text-2xl font-bold text-orange-400">{stats.shipped}</p>
               </div>
-              <Truck className="h-8 w-8 text-orange-400" />
+              <Truck className="h-6 w-6 lg:h-8 lg:w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Entregados</p>
-                <p className="text-2xl font-bold text-green-400">{stats.delivered}</p>
+                <p className="text-xs font-medium text-white/70">Entregados</p>
+                <p className="text-lg lg:text-2xl font-bold text-green-400">{stats.delivered}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-400" />
+              <CheckCircle className="h-6 w-6 lg:h-8 lg:w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Ingresos</p>
-                <p className="text-xl font-bold text-purple-400">${stats.totalRevenue.toLocaleString()}</p>
+                <p className="text-xs font-medium text-white/70">Ingresos</p>
+                <p className="text-sm lg:text-xl font-bold text-purple-400">${stats.totalRevenue.toLocaleString()}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-purple-400" />
+              <DollarSign className="h-6 w-6 lg:h-8 lg:w-8 text-purple-400" />
             </div>
           </CardContent>
         </Card>
@@ -303,14 +376,159 @@ export default function AdminOrders() {
           <CardTitle className="text-white">Pedidos ({filteredOrders.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredOrders.length === 0 ? (
-              <div className="text-center py-8 text-white/70">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No se encontraron pedidos con los filtros aplicados</p>
-              </div>
-            ) : (
-              filteredOrders.map((order) => (
+          {filteredOrders.length === 0 ? (
+            <div className="text-center py-8 text-white/70">
+              <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No se encontraron pedidos con los filtros aplicados</p>
+            </div>
+          ) : isMobile ? (
+            // Vista móvil - Cards compactas en 2 columnas
+            <div className="grid gap-3 grid-cols-2">
+              {filteredOrders.map((order) => (
+                <Card key={order.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
+                  <CardContent className="p-3">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold text-white text-xs line-clamp-1">{order.userName}</h3>
+                          <p className="text-white/70 text-xs">#{order.id.slice(-8)}</p>
+                        </div>
+                        {getStatusBadge(order.status)}
+                      </div>
+
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center text-white/80">
+                          <DollarSign className="w-3 h-3 mr-1" />
+                          <span className="font-bold text-green-400">${order.total.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center text-white/80">
+                          <Package className="w-3 h-3 mr-1" />
+                          <span>{order.items.length} productos</span>
+                        </div>
+                        <div className="text-white/70">{new Date(order.createdAt).toLocaleDateString("es-AR")}</div>
+                      </div>
+
+                      <div className="flex gap-1">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1"
+                              onClick={() => setSelectedOrder(order)}
+                            >
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Pedido #{selectedOrder?.id.slice(-8)}</DialogTitle>
+                              <DialogDescription>Detalles completos del pedido</DialogDescription>
+                            </DialogHeader>
+
+                            {selectedOrder && (
+                              <div className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <div>
+                                    <Label className="text-sm font-medium">Cliente</Label>
+                                    <p className="text-sm">{selectedOrder.userName}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Email</Label>
+                                    <p className="text-sm">{selectedOrder.userEmail}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Teléfono</Label>
+                                    <p className="text-sm">{selectedOrder.userPhone}</p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Estado</Label>
+                                    <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <Label className="text-sm font-medium">Dirección de envío</Label>
+                                  <p className="text-sm">{selectedOrder.shippingAddress}</p>
+                                </div>
+
+                                <div>
+                                  <Label className="text-sm font-medium">Productos</Label>
+                                  <div className="mt-2 space-y-2">
+                                    {selectedOrder.items.map((item) => (
+                                      <div
+                                        key={item.id}
+                                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <img
+                                            src={item.image || "/placeholder.svg"}
+                                            alt={item.name}
+                                            className="w-10 h-10 object-cover rounded"
+                                          />
+                                          <div>
+                                            <p className="text-sm font-medium">{item.name}</p>
+                                            <p className="text-xs text-muted-foreground">Cantidad: {item.quantity}</p>
+                                          </div>
+                                        </div>
+                                        <p className="text-sm font-bold">
+                                          ${(item.price * item.quantity).toLocaleString()}
+                                        </p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-between items-center pt-2 border-t">
+                                  <span className="font-medium">Total:</span>
+                                  <span className="text-lg font-bold text-green-600">
+                                    ${selectedOrder.total.toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        {order.status === "pending" && (
+                          <Button
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, "processing")}
+                            className="bg-blue-500 hover:bg-blue-600 text-xs p-1"
+                          >
+                            ✓
+                          </Button>
+                        )}
+
+                        {order.status === "processing" && (
+                          <Button
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, "shipped")}
+                            className="bg-orange-500 hover:bg-orange-600 text-xs p-1"
+                          >
+                            📦
+                          </Button>
+                        )}
+
+                        {order.status === "shipped" && (
+                          <Button
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, "delivered")}
+                            className="bg-green-500 hover:bg-green-600 text-xs p-1"
+                          >
+                            ✅
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            // Vista desktop - Lista completa
+            <div className="space-y-4">
+              {filteredOrders.map((order) => (
                 <Card key={order.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">
@@ -423,98 +641,12 @@ export default function AdminOrders() {
                           </DialogContent>
                         </Dialog>
 
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                              onClick={() => setEditingOrder(order)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Editar Pedido</DialogTitle>
-                              <DialogDescription>Modifica la información del pedido</DialogDescription>
-                            </DialogHeader>
-                            {editingOrder && (
-                              <div className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div className="space-y-2">
-                                    <Label>Nombre del Cliente</Label>
-                                    <Input
-                                      value={editingOrder.userName}
-                                      onChange={(e) => setEditingOrder({ ...editingOrder, userName: e.target.value })}
-                                    />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label>Email</Label>
-                                    <Input
-                                      value={editingOrder.userEmail}
-                                      onChange={(e) => setEditingOrder({ ...editingOrder, userEmail: e.target.value })}
-                                    />
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label>Teléfono</Label>
-                                  <Input
-                                    value={editingOrder.userPhone}
-                                    onChange={(e) => setEditingOrder({ ...editingOrder, userPhone: e.target.value })}
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label>Dirección de Envío</Label>
-                                  <Input
-                                    value={editingOrder.shippingAddress}
-                                    onChange={(e) =>
-                                      setEditingOrder({ ...editingOrder, shippingAddress: e.target.value })
-                                    }
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label>Estado</Label>
-                                  <Select
-                                    value={editingOrder.status}
-                                    onValueChange={(value) =>
-                                      setEditingOrder({ ...editingOrder, status: value as any })
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="pending">Pendiente</SelectItem>
-                                      <SelectItem value="processing">Procesando</SelectItem>
-                                      <SelectItem value="shipped">Enviado</SelectItem>
-                                      <SelectItem value="delivered">Entregado</SelectItem>
-                                      <SelectItem value="cancelled">Cancelado</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={() => setEditingOrder(null)}>
-                                    Cancelar
-                                  </Button>
-                                  <Button onClick={updateOrder}>Actualizar</Button>
-                                </div>
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-
                         {order.status === "pending" && (
                           <Button
                             size="sm"
                             onClick={() => updateOrderStatus(order.id, "processing")}
                             className="bg-blue-500 hover:bg-blue-600"
                           >
-                            <Package className="h-4 w-4 mr-1" />
                             Procesar
                           </Button>
                         )}
@@ -525,7 +657,6 @@ export default function AdminOrders() {
                             onClick={() => updateOrderStatus(order.id, "shipped")}
                             className="bg-orange-500 hover:bg-orange-600"
                           >
-                            <Truck className="h-4 w-4 mr-1" />
                             Enviar
                           </Button>
                         )}
@@ -536,7 +667,6 @@ export default function AdminOrders() {
                             onClick={() => updateOrderStatus(order.id, "delivered")}
                             className="bg-green-500 hover:bg-green-600"
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
                             Entregar
                           </Button>
                         )}
@@ -548,9 +678,9 @@ export default function AdminOrders() {
                     </div>
                   </CardContent>
                 </Card>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

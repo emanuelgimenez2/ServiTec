@@ -1,78 +1,79 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { User, Mail, Phone, MapPin, Save, ArrowLeft, Calendar, ShoppingCart, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Settings,
+  Save,
+  ArrowLeft,
+  Camera,
+  Shield,
+  Bell,
+  CreditCard,
+  History,
+} from "lucide-react"
+import { onAuthStateChanged, signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
-import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth"
-import { perfilService } from "@/lib/firebase-services"
+import { getUserDocument } from "@/lib/auth-service"
+import { perfilService, turnosService } from "@/lib/firebase-services"
 
 export default function PerfilPage() {
-  const [user, setUser] = useState<FirebaseUser | null>(null)
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
-  const [profileLoading, setProfileLoading] = useState(false)
-  const [stats, setStats] = useState({
-    totalAppointments: 0,
-    completedAppointments: 0,
-    cartItems: 0,
-    wishlistItems: 0,
-    memberSince: "",
-  })
-  const router = useRouter()
-  const { toast } = useToast()
-
-  const [profileData, setProfileData] = useState({
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     address: "",
   })
+  const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser)
-      setLoading(false)
-
-      if (!currentUser) {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
         router.push("/auth")
         return
       }
 
-      // Cargar datos del perfil
-      loadUserProfile(currentUser)
-
-      // Establecer datos básicos del usuario
-      setProfileData({
-        name: currentUser.displayName || "",
-        email: currentUser.email || "",
-        phone: "",
-        address: "",
-      })
-
-      // Calculate user stats
-      calculateStats(currentUser)
+      const userData = await getUserDocument(user.uid)
+      if (userData) {
+        setUser(userData)
+        await loadProfile(userData.id)
+        await loadUserAppointments(userData.id)
+      }
+      setLoading(false)
     })
 
     return () => unsubscribe()
   }, [router])
 
-  const loadUserProfile = async (currentUser: FirebaseUser) => {
+  const loadProfile = async (userId: string) => {
     try {
-      const profile = await perfilService.getUserProfile(currentUser.uid)
-      if (profile) {
-        setProfileData({
-          name: profile.name || currentUser.displayName || "",
-          email: profile.email || currentUser.email || "",
-          phone: profile.phone || "",
-          address: profile.address || "",
+      const userProfile = await perfilService.getUserProfile(userId)
+      if (userProfile) {
+        setProfile(userProfile)
+        setFormData({
+          name: userProfile.name || "",
+          email: userProfile.email || "",
+          phone: userProfile.phone || "",
+          address: userProfile.address || "",
         })
       }
     } catch (error) {
@@ -80,252 +81,337 @@ export default function PerfilPage() {
     }
   }
 
-  const calculateStats = (currentUser: FirebaseUser) => {
-    // Get appointments
-    const appointments = JSON.parse(localStorage.getItem("servitec_appointments") || "[]")
-    const userAppointments = appointments.filter((apt: any) => apt.userId === currentUser.uid)
-
-    // Get cart items
-    const carritoCollection = JSON.parse(localStorage.getItem("carrito") || "[]")
-    const userCart = carritoCollection.find((c: any) => c.userId === currentUser.uid)
-    const cartItems = userCart ? userCart.items.reduce((total: number, item: any) => total + item.quantity, 0) : 0
-
-    // Get wishlist items
-    const wishlistCollection = JSON.parse(localStorage.getItem("lista_de_deseos") || "[]")
-    const userWishlist = wishlistCollection.find((w: any) => w.userId === currentUser.uid)
-    const wishlistItems = userWishlist ? userWishlist.items.length : 0
-
-    setStats({
-      totalAppointments: userAppointments.length,
-      completedAppointments: userAppointments.filter((apt: any) => apt.status === "completed").length,
-      cartItems,
-      wishlistItems,
-      memberSince: new Date(currentUser.metadata.creationTime || Date.now()).toLocaleDateString("es-AR", {
-        year: "numeric",
-        month: "long",
-      }),
-    })
+  const loadUserAppointments = async (userId: string) => {
+    try {
+      const userAppointments = await turnosService.getUserAppointments(userId)
+      setAppointments(userAppointments.slice(0, 3)) // Solo los últimos 3
+    } catch (error) {
+      console.error("Error loading appointments:", error)
+    }
   }
 
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSaveProfile = async () => {
     if (!user) return
 
-    setProfileLoading(true)
-
+    setSaving(true)
     try {
-      await perfilService.updateProfile(user.uid, profileData)
+      await perfilService.updateProfile(user.id, formData)
 
       toast({
         title: "Perfil actualizado",
-        description: "Tus datos han sido actualizados correctamente.",
+        description: "Tu información ha sido guardada correctamente",
       })
     } catch (error) {
+      console.error("Error saving profile:", error)
       toast({
         title: "Error",
-        description: "Hubo un problema al actualizar tu perfil. Intenta nuevamente.",
+        description: "No se pudo guardar el perfil",
         variant: "destructive",
       })
     } finally {
-      setProfileLoading(false)
+      setSaving(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth)
+      router.push("/")
+    } catch (error) {
+      console.error("Error signing out:", error)
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-16 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p>Cargando perfil...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-20">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center text-white">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+              <p>Cargando perfil...</p>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
-  if (!user) {
-    return null
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-20">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Header */}
-        <div className="flex items-center mb-8">
-          <Button variant="ghost" onClick={() => router.back()} className="mr-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
-            <p className="text-gray-600">Gestiona tu información personal</p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" onClick={() => router.back()} className="text-white hover:bg-white/10">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Volver
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Mi Perfil</h1>
+              <p className="text-white/70">Gestiona tu información personal y configuración</p>
+            </div>
           </div>
+
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            Cerrar Sesión
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Summary */}
-          <div className="lg:col-span-1">
-            <Card className="bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 text-white">
-              <CardContent className="p-6">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    {user.photoURL ? (
-                      <img src={user.photoURL || "/placeholder.svg"} alt="Profile" className="w-20 h-20 rounded-full" />
-                    ) : (
-                      <User className="w-12 h-12" />
-                    )}
+          {/* Profile Info */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Avatar and Basic Info */}
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <User className="mr-2 h-5 w-5" />
+                  Información Personal
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center space-x-6">
+                  <div className="relative">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src={user?.photoURL || "/placeholder.svg"} />
+                      <AvatarFallback className="bg-purple-500 text-white text-xl">
+                        {user?.displayName?.charAt(0) || user?.email?.charAt(0) || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      size="sm"
+                      className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <h2 className="text-xl font-bold mb-2">{user.displayName || profileData.name}</h2>
-                  <p className="text-white/80 mb-4">{user.email}</p>
-                  <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                    Usuario
-                  </Badge>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">{user?.displayName || "Usuario"}</h3>
+                    <p className="text-white/70">{user?.email}</p>
+                    <Badge className="mt-2 bg-green-500/20 text-green-300 border-green-500/30">Cuenta Verificada</Badge>
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-white/90">
+                      <User className="h-4 w-4 inline mr-1" />
+                      Nombre Completo
+                    </Label>
+                    <Input
+                      placeholder="Tu nombre completo"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-white/90">
+                      <Mail className="h-4 w-4 inline mr-1" />
+                      Email
+                    </Label>
+                    <Input
+                      type="email"
+                      placeholder="tu@email.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white/90">
+                    <Phone className="h-4 w-4 inline mr-1" />
+                    Teléfono
+                  </Label>
+                  <Input
+                    placeholder="Tu número de teléfono"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white/90">
+                    <MapPin className="h-4 w-4 inline mr-1" />
+                    Dirección
+                  </Label>
+                  <Textarea
+                    placeholder="Tu dirección completa"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={saving}
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Guardar Cambios
+                    </>
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
-            {/* Stats */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Estadísticas</CardTitle>
+            {/* Recent Appointments */}
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-white flex items-center">
+                  <Calendar className="mr-2 h-5 w-5" />
+                  Turnos Recientes
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/mis-turnos")}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  Ver Todos
+                </Button>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Calendar className="w-5 h-5 text-blue-500 mr-2" />
-                    <span className="text-sm text-gray-600">Turnos totales</span>
+              <CardContent>
+                {appointments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Calendar className="h-12 w-12 mx-auto text-white/50 mb-4" />
+                    <p className="text-white/70">No tienes turnos recientes</p>
+                    <Button
+                      onClick={() => router.push("/turnos")}
+                      className="mt-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    >
+                      Reservar Turno
+                    </Button>
                   </div>
-                  <Badge variant="outline">{stats.totalAppointments}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Calendar className="w-5 h-5 text-green-500 mr-2" />
-                    <span className="text-sm text-gray-600">Turnos completados</span>
+                ) : (
+                  <div className="space-y-3">
+                    {appointments.map((appointment) => (
+                      <div
+                        key={appointment.id}
+                        className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10"
+                      >
+                        <div>
+                          <h4 className="font-semibold text-white">{appointment.serviceName}</h4>
+                          <p className="text-sm text-white/70">
+                            {new Date(appointment.date).toLocaleDateString("es-AR")} - {appointment.time}
+                          </p>
+                        </div>
+                        <Badge
+                          className={
+                            appointment.status === "completed"
+                              ? "bg-green-500/20 text-green-300 border-green-500/30"
+                              : appointment.status === "confirmed"
+                                ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                : "bg-yellow-500/20 text-yellow-300 border-yellow-500/30"
+                          }
+                        >
+                          {appointment.status === "completed"
+                            ? "Completado"
+                            : appointment.status === "confirmed"
+                              ? "Confirmado"
+                              : "Pendiente"}
+                        </Badge>
+                      </div>
+                    ))}
                   </div>
-                  <Badge variant="outline">{stats.completedAppointments}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <ShoppingCart className="w-5 h-5 text-orange-500 mr-2" />
-                    <span className="text-sm text-gray-600">Items en carrito</span>
-                  </div>
-                  <Badge variant="outline">{stats.cartItems}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Heart className="w-5 h-5 text-red-500 mr-2" />
-                    <span className="text-sm text-gray-600">Lista de deseos</span>
-                  </div>
-                  <Badge variant="outline">{stats.wishlistItems}</Badge>
-                </div>
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-gray-600">
-                    Miembro desde <span className="font-medium">{stats.memberSince}</span>
-                  </p>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Profile Form */}
-          <div className="lg:col-span-2">
-            <Card>
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="w-5 h-5 mr-2" />
-                  Información Personal
+                <CardTitle className="text-white">Estadísticas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-white/70">Turnos Totales</span>
+                  <span className="text-2xl font-bold text-white">{appointments.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white/70">Miembro desde</span>
+                  <span className="text-white">
+                    {user?.metadata?.creationTime ? new Date(user.metadata.creationTime).getFullYear() : "2024"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white">Acciones Rápidas</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start bg-white/5 border-white/20 text-white hover:bg-white/10"
+                  onClick={() => router.push("/turnos")}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Reservar Turno
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start bg-white/5 border-white/20 text-white hover:bg-white/10"
+                  onClick={() => router.push("/mis-turnos")}
+                >
+                  <History className="mr-2 h-4 w-4" />
+                  Ver Mis Turnos
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start bg-white/5 border-white/20 text-white hover:bg-white/10"
+                  onClick={() => router.push("/tienda")}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Ir a la Tienda
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Settings */}
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center">
+                  <Settings className="mr-2 h-5 w-5" />
+                  Configuración
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleProfileUpdate} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="name">Nombre completo</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                          id="name"
-                          value={profileData.name}
-                          onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                          className="pl-10"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                          id="email"
-                          type="email"
-                          value={profileData.email}
-                          onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                          className="pl-10"
-                          required
-                          disabled
-                        />
-                      </div>
-                      <p className="text-sm text-gray-500 mt-1">El email no se puede modificar</p>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="phone">Teléfono</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                          id="phone"
-                          type="tel"
-                          value={profileData.phone}
-                          onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                          className="pl-10"
-                          placeholder="+54 11 1234-5678"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="address">Dirección</Label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                          id="address"
-                          value={profileData.address}
-                          onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                          className="pl-10"
-                          placeholder="Tu dirección"
-                        />
-                      </div>
-                    </div>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Bell className="h-4 w-4 text-white/70" />
+                    <span className="text-white/90">Notificaciones</span>
                   </div>
-
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-900 mb-2">Información de la cuenta</h4>
-                    <div className="space-y-2 text-sm text-blue-800">
-                      <p>
-                        <strong>Proveedor:</strong> Google
-                      </p>
-                      <p>
-                        <strong>Verificado:</strong> {user.emailVerified ? "Sí" : "No"}
-                      </p>
-                      <p>
-                        <strong>Último acceso:</strong>{" "}
-                        {new Date(user.metadata.lastSignInTime || Date.now()).toLocaleDateString("es-AR")}
-                      </p>
-                    </div>
+                  <Badge className="bg-green-500/20 text-green-300 border-green-500/30">Activas</Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Shield className="h-4 w-4 text-white/70" />
+                    <span className="text-white/90">Privacidad</span>
                   </div>
-
-                  <div className="flex justify-end">
-                    <Button
-                      type="submit"
-                      disabled={profileLoading}
-                      className="bg-gradient-to-r from-purple-600 to-cyan-500 hover:from-purple-700 hover:to-cyan-600"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      {profileLoading ? "Guardando..." : "Guardar Cambios"}
-                    </Button>
-                  </div>
-                </form>
+                  <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">Configurada</Badge>
+                </div>
               </CardContent>
             </Card>
           </div>

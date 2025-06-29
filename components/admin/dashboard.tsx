@@ -315,33 +315,7 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Quick Actions - Más compacto */}
-        <Card className="bg-white/10 backdrop-blur-md border-white/20">
-          <CardHeader className="p-3 sm:p-4 lg:p-6">
-            <CardTitle className="text-white flex items-center text-sm sm:text-base lg:text-lg">
-              <Zap className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              Acciones Rápidas
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4 lg:p-6 pt-0 space-y-2 sm:space-y-3 lg:space-y-4">
-            <Button className="w-full justify-start bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-xs sm:text-sm">
-              <Package className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              Agregar Producto
-            </Button>
-            <Button className="w-full justify-start bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-xs sm:text-sm">
-              <Calendar className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              Nueva Cita
-            </Button>
-            <Button className="w-full justify-start bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-xs sm:text-sm">
-              <MessageSquare className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              Ver Mensajes
-            </Button>
-            <Button className="w-full justify-start bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-xs sm:text-sm">
-              <BarChart3 className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              Ver Reportes
-            </Button>
-          </CardContent>
-        </Card>
+       
       </div>
     </div>
   )

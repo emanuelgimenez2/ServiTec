@@ -40,7 +40,6 @@ const createService = async <T extends Service>(
   try {
     console.log(`🔥 Creando documento en colección '${collectionName}':`, data)
 
-    // Verificar que db esté disponible
     if (!db) {
       throw new Error("Firebase db no está inicializado")
     }
@@ -55,11 +54,6 @@ const createService = async <T extends Service>(
     return docRef.id
   } catch (error) {
     console.error(`❌ Error creating ${collectionName} document:`, error)
-    console.error("Error details:", {
-      code: error.code,
-      message: error.message,
-      name: error.name,
-    })
     throw error
   }
 }
@@ -186,6 +180,7 @@ export interface Usuario extends Service {
   email: string
   phone: string
   role: string
+  isActive?: boolean
 }
 
 export interface Product extends Service {
@@ -230,6 +225,24 @@ export interface Perfil extends Service {
   avatar?: string
 }
 
+export interface Order extends Service {
+  userId: string
+  userName: string
+  userEmail: string
+  userPhone: string
+  items: Array<{
+    id: string
+    name: string
+    price: number
+    quantity: number
+    image: string
+  }>
+  total: number
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled"
+  shippingAddress: string
+  paymentMethod: string
+}
+
 // Specific service implementations
 export const turnosService = {
   createAppointment: (data: Omit<Turno, "id" | "createdAt" | "updatedAt">) => createService<Turno>("turnos", data),
@@ -238,7 +251,6 @@ export const turnosService = {
   updateAppointment: (id: string, data: Partial<Turno>) => updateService<Turno>("turnos", id, data),
   deleteAppointment: (id: string) => deleteService("turnos", id),
 
-  // NUEVA FUNCIÓN: getUserAppointments
   getUserAppointments: async (userId: string): Promise<Turno[]> => {
     console.log("👤 === OBTENIENDO TURNOS DEL USUARIO ===", userId)
     try {
@@ -261,7 +273,6 @@ export const turnosService = {
     }
   },
 
-  // NUEVA FUNCIÓN: cancelAppointment
   cancelAppointment: async (appointmentId: string): Promise<void> => {
     console.log("❌ === CANCELANDO TURNO ===", appointmentId)
     try {
@@ -309,7 +320,6 @@ export const mensajeService = {
   createMessage: async (data: Omit<Mensaje, "id" | "createdAt" | "updatedAt">): Promise<string> => {
     console.log("💬 === CREANDO MENSAJE ===", data)
     try {
-      // Agregar status por defecto
       const messageData = {
         ...data,
         status: "unread" as const,
@@ -355,7 +365,6 @@ export const usuarioService = {
   },
 }
 
-// NUEVO: PERFIL SERVICE
 export const perfilService = {
   getUserProfile: async (userId: string): Promise<Perfil | null> => {
     console.log("👤 === OBTENIENDO PERFIL DEL USUARIO ===", userId)
@@ -389,12 +398,10 @@ export const perfilService = {
         throw new Error("Firebase db no está inicializado")
       }
 
-      // Buscar perfil existente
       const q = query(collection(db, "perfiles"), where("userId", "==", userId))
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
-        // Crear nuevo perfil
         const newProfile = {
           userId,
           ...profileData,
@@ -402,7 +409,6 @@ export const perfilService = {
         await createService<Perfil>("perfiles", newProfile)
         console.log("✅ Nuevo perfil creado")
       } else {
-        // Actualizar perfil existente
         const profileDoc = querySnapshot.docs[0]
         await updateService<Perfil>("perfiles", profileDoc.id, profileData)
         console.log("✅ Perfil actualizado")
@@ -426,21 +432,17 @@ export const perfilService = {
   },
 }
 
-// PRODUCTOS SERVICE - CON LOGS DETALLADOS
 export const productosService = {
   createProduct: async (data: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<string> => {
     console.log("🚀 === INICIANDO CREACIÓN DE PRODUCTO ===")
     console.log("📝 Datos recibidos:", data)
 
     try {
-      // Verificar Firebase
-      console.log("🔍 Verificando Firebase...")
       if (!db) {
         throw new Error("❌ Firebase db no está inicializado")
       }
       console.log("✅ Firebase db disponible")
 
-      // Preparar datos
       const productData = {
         name: data.name,
         description: data.description || "",
@@ -462,22 +464,15 @@ export const productosService = {
 
       console.log("📦 Datos preparados para Firebase:", productData)
 
-      // Crear documento
-      console.log("💾 Creando documento en colección 'productos'...")
       const docRef = await addDoc(collection(db, "productos"), productData)
 
       console.log("🎉 ¡PRODUCTO CREADO EXITOSAMENTE!")
       console.log("🆔 ID del documento:", docRef.id)
-      console.log("📍 Path completo:", docRef.path)
 
       return docRef.id
     } catch (error) {
       console.error("💥 === ERROR AL CREAR PRODUCTO ===")
       console.error("❌ Error completo:", error)
-      console.error("🔍 Tipo de error:", typeof error)
-      console.error("📋 Error code:", error.code)
-      console.error("📝 Error message:", error.message)
-      console.error("🗂️ Error stack:", error.stack)
       throw error
     }
   },
@@ -510,8 +505,6 @@ export const productosService = {
       })) as Product[]
 
       console.log("✅ Productos procesados:", products.length)
-      console.log("📄 Primer producto:", products[0])
-
       return products
     } catch (error) {
       console.error("❌ Error obteniendo productos activos:", error)
@@ -519,7 +512,6 @@ export const productosService = {
     }
   },
 
-  // NUEVA FUNCIÓN: getFeaturedProducts
   getFeaturedProducts: async (): Promise<Product[]> => {
     console.log("⭐ === OBTENIENDO PRODUCTOS DESTACADOS ===")
     try {
@@ -552,7 +544,6 @@ export const productosService = {
       return products
     } catch (error) {
       console.error("❌ Error obteniendo productos destacados:", error)
-      // Fallback: devolver productos activos limitados
       try {
         const q = query(
           collection(db, "productos"),
@@ -591,9 +582,7 @@ export const productosService = {
   },
 }
 
-// CARRITO SERVICE - FIREBASE INTEGRATION
 export const carritoService = {
-  // Crear carrito para usuario
   createUserCart: async (userId: string): Promise<string> => {
     console.log("🛒 === CREANDO CARRITO PARA USUARIO ===", userId)
     try {
@@ -615,7 +604,6 @@ export const carritoService = {
     }
   },
 
-  // Obtener carrito del usuario
   getUserCart: async (userId: string): Promise<Cart | null> => {
     console.log("🔍 === OBTENIENDO CARRITO DEL USUARIO ===", userId)
     try {
@@ -637,7 +625,6 @@ export const carritoService = {
     }
   },
 
-  // Agregar producto al carrito
   addToCart: async (userId: string, product: Product, quantity = 1): Promise<void> => {
     console.log("➕ === AGREGANDO PRODUCTO AL CARRITO ===", { userId, productId: product.id, quantity })
     try {
@@ -656,10 +643,8 @@ export const carritoService = {
       const updatedItems = [...userCart.items]
 
       if (existingItemIndex >= 0) {
-        // Actualizar cantidad si el producto ya existe
         updatedItems[existingItemIndex].quantity += quantity
       } else {
-        // Agregar nuevo producto
         const newItem: CartItem = {
           productId: product.id!,
           name: product.name,
@@ -679,7 +664,6 @@ export const carritoService = {
     }
   },
 
-  // Actualizar carrito
   updateCart: async (cartId: string, items: CartItem[]): Promise<void> => {
     console.log("🔄 === ACTUALIZANDO CARRITO ===", { cartId, itemsCount: items.length })
     try {
@@ -699,12 +683,10 @@ export const carritoService = {
     }
   },
 
-  // Obtener carrito por ID
   getCartById: async (cartId: string): Promise<Cart | null> => {
     return getServiceById<Cart>("carrito", cartId)
   },
 
-  // Eliminar producto del carrito
   removeFromCart: async (userId: string, productId: string): Promise<void> => {
     console.log("🗑️ === ELIMINANDO PRODUCTO DEL CARRITO ===", { userId, productId })
     try {
@@ -722,7 +704,6 @@ export const carritoService = {
     }
   },
 
-  // Actualizar cantidad de producto
   updateQuantity: async (userId: string, productId: string, quantity: number): Promise<void> => {
     console.log("📊 === ACTUALIZANDO CANTIDAD ===", { userId, productId, quantity })
     try {
@@ -746,7 +727,6 @@ export const carritoService = {
     }
   },
 
-  // Limpiar carrito
   clearCart: async (userId: string): Promise<void> => {
     console.log("🧹 === LIMPIANDO CARRITO ===", userId)
     try {
@@ -763,7 +743,6 @@ export const carritoService = {
     }
   },
 
-  // Completar carrito (checkout)
   completeCart: async (userId: string): Promise<void> => {
     console.log("✅ === COMPLETANDO CARRITO ===", userId)
     try {
@@ -781,6 +760,62 @@ export const carritoService = {
       console.log("✅ Carrito completado")
     } catch (error) {
       console.error("❌ Error completando carrito:", error)
+      throw error
+    }
+  },
+}
+
+export const pedidosService = {
+  createOrder: async (orderData: Omit<Order, "id" | "createdAt" | "updatedAt">): Promise<string> => {
+    try {
+      console.log("🛒 Creando pedido en Firebase:", orderData)
+      const docRef = await addDoc(collection(db, "pedidos"), {
+        ...orderData,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+      console.log("✅ Pedido creado con ID:", docRef.id)
+      return docRef.id
+    } catch (error) {
+      console.error("❌ Error creando pedido:", error)
+      throw error
+    }
+  },
+
+  getAllOrders: async (): Promise<Order[]> => {
+    try {
+      console.log("📋 Obteniendo todos los pedidos...")
+      const q = query(collection(db, "pedidos"), orderBy("createdAt", "desc"))
+      const querySnapshot = await getDocs(q)
+
+      const orders = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      })) as Order[]
+
+      console.log(`🛒 ${orders.length} pedidos obtenidos`)
+      return orders
+    } catch (error) {
+      console.error("❌ Error obteniendo pedidos:", error)
+      throw error
+    }
+  },
+
+  updateOrder: (id: string, data: Partial<Order>) => updateService<Order>("pedidos", id, data),
+  deleteOrder: (id: string) => deleteService("pedidos", id),
+
+  updateOrderStatus: async (id: string, status: Order["status"]): Promise<void> => {
+    try {
+      const docRef = doc(db, "pedidos", id)
+      await updateDoc(docRef, {
+        status,
+        updatedAt: serverTimestamp(),
+      })
+      console.log("🔄 Estado del pedido actualizado:", id, status)
+    } catch (error) {
+      console.error("❌ Error actualizando estado del pedido:", error)
       throw error
     }
   },

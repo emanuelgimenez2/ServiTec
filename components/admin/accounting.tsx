@@ -18,11 +18,12 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 import { DollarSign, Plus, Trash2, TrendingUp, TrendingDown, Wrench, ShoppingBag, Edit } from "lucide-react"
+import { servicioService, ventasService } from "@/lib/firebase-services"
 
 interface ServiceRecord {
   id: string
   type: "service"
-  category: "Reparación PC" | "Starlink" | "Cámaras" | "Desarrollo Web"
+  category: "Reparación PC" | "Starlink" | "Cámaras" | "Desarrollo Web" | string
   description: string
   client: string
   amount: number
@@ -63,11 +64,50 @@ export default function AdminAccounting() {
     filterRecords()
   }, [records, searchTerm, filterType, filterStatus])
 
-  const loadRecords = () => {
-    const services = JSON.parse(localStorage.getItem("admin_services") || "[]")
-    const sales = JSON.parse(localStorage.getItem("admin_sales") || "[]")
-    const allRecords = [...services, ...sales]
-    setRecords(allRecords)
+  const loadRecords = async () => {
+    try {
+      // Cargar desde Firebase
+      const [services, sales] = await Promise.all([servicioService.getAllServices(), ventasService.getAllSales()])
+
+      // Convertir servicios a formato de contabilidad
+      const serviceRecords = services.map((service) => ({
+        id: service.id,
+        type: "service",
+        category: service.serviceType,
+        description: service.notes || `Servicio: ${service.serviceType}`,
+        client: service.clientName,
+        amount: Number.parseFloat(service.price) || 0,
+        date: service.date,
+        status: service.completed ? "completed" : "pending",
+      }))
+
+      // Convertir ventas a formato de contabilidad
+      const saleRecords = sales.map((sale) => ({
+        id: sale.id,
+        type: "sale",
+        productName: sale.productName,
+        quantity: sale.quantity,
+        unitPrice: Number.parseFloat(sale.unitPrice) || 0,
+        amount: Number.parseFloat(sale.totalPrice) || 0,
+        client: sale.clientName,
+        date: sale.date,
+        status: "completed",
+      }))
+
+      const allRecords = [...serviceRecords, ...saleRecords]
+      setRecords(allRecords)
+
+      // También guardar en localStorage para compatibilidad
+      localStorage.setItem("admin_services", JSON.stringify(serviceRecords))
+      localStorage.setItem("admin_sales", JSON.stringify(saleRecords))
+    } catch (error) {
+      console.error("Error loading records from Firebase:", error)
+      // Fallback a localStorage si Firebase falla
+      const services = JSON.parse(localStorage.getItem("admin_services") || "[]")
+      const sales = JSON.parse(localStorage.getItem("admin_sales") || "[]")
+      const allRecords = [...services, ...sales]
+      setRecords(allRecords)
+    }
   }
 
   const filterRecords = () => {
@@ -96,7 +136,7 @@ export default function AdminAccounting() {
     setFilteredRecords(filtered)
   }
 
-  const addRecord = () => {
+  const addRecord = async () => {
     if (!newRecord.type || !newRecord.client || !newRecord.amount || !newRecord.date) {
       toast({
         title: "Error",
@@ -110,7 +150,7 @@ export default function AdminAccounting() {
       id: Date.now().toString(),
       ...newRecord,
       status: "completed",
-      amount: Number(newRecord.amount) || 0, // Asegurar que amount sea un número
+      amount: Number(newRecord.amount) || 0,
     } as AccountingRecord
 
     const updatedRecords = [...records, record]
@@ -123,6 +163,34 @@ export default function AdminAccounting() {
     } else {
       const sales = updatedRecords.filter((r) => r.type === "sale")
       localStorage.setItem("admin_sales", JSON.stringify(sales))
+    }
+
+    // Guardar en Firebase
+    try {
+      if (record.type === "service") {
+        await servicioService.createService({
+          clientName: record.client,
+          clientPhone: "No especificado",
+          serviceType: record.category || "Otro",
+          date: record.date,
+          price: record.amount.toString(),
+          completed: true,
+          notes: record.description || "",
+        })
+      } else {
+        await ventasService.createSale({
+          productName: (record as SaleRecord).productName,
+          clientName: record.client,
+          clientPhone: "No especificado",
+          quantity: (record as SaleRecord).quantity || 1,
+          unitPrice: (record as SaleRecord).unitPrice?.toString() || "0",
+          totalPrice: record.amount.toString(),
+          date: record.date,
+          notes: "",
+        })
+      }
+    } catch (error) {
+      console.error("Error saving to Firebase:", error)
     }
 
     setNewRecord({})
@@ -174,15 +242,23 @@ export default function AdminAccounting() {
     switch (status) {
       case "completed":
         return (
-          <Badge variant="default" className="bg-green-500">
+          <Badge variant="default" className="bg-green-500 text-xs">
             Completado
           </Badge>
         )
       case "pending":
-        return <Badge variant="secondary">Pendiente</Badge>
+        return (
+          <Badge variant="secondary" className="text-xs">
+            Pendiente
+          </Badge>
+        )
       case "cancelled":
       case "refunded":
-        return <Badge variant="destructive">{status === "cancelled" ? "Cancelado" : "Reembolsado"}</Badge>
+        return (
+          <Badge variant="destructive" className="text-xs">
+            {status === "cancelled" ? "Cancelado" : "Reembolsado"}
+          </Badge>
+        )
       default:
         return null
     }
@@ -359,64 +435,64 @@ export default function AdminAccounting() {
         </Dialog>
       </div>
 
-      {/* Estadísticas */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-        <Card className="md:col-span-2 bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+      {/* Estadísticas - Responsive */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-6">
+        <Card className="col-span-2 bg-white/10 backdrop-blur-sm border-white/20">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Ingresos Totales</p>
-                <p className="text-2xl font-bold text-green-400">{formatAmount(stats.totalRevenue)}</p>
+                <p className="text-xs font-medium text-white/70">Ingresos Totales</p>
+                <p className="text-lg lg:text-2xl font-bold text-green-400">{formatAmount(stats.totalRevenue)}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-green-400" />
+              <TrendingUp className="h-6 w-6 lg:h-8 lg:w-8 text-green-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Servicios</p>
-                <p className="text-xl font-bold text-blue-400">{formatAmount(stats.servicesRevenue)}</p>
+                <p className="text-xs font-medium text-white/70">Servicios</p>
+                <p className="text-sm lg:text-xl font-bold text-blue-400">{formatAmount(stats.servicesRevenue)}</p>
               </div>
-              <Wrench className="h-8 w-8 text-blue-400" />
+              <Wrench className="h-5 w-5 lg:h-8 lg:w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Ventas</p>
-                <p className="text-xl font-bold text-purple-400">{formatAmount(stats.salesRevenue)}</p>
+                <p className="text-xs font-medium text-white/70">Ventas</p>
+                <p className="text-sm lg:text-xl font-bold text-purple-400">{formatAmount(stats.salesRevenue)}</p>
               </div>
-              <ShoppingBag className="h-8 w-8 text-purple-400" />
+              <ShoppingBag className="h-5 w-5 lg:h-8 lg:w-8 text-purple-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Servicios</p>
-                <p className="text-2xl font-bold text-white">{stats.totalServices}</p>
+                <p className="text-xs font-medium text-white/70">Total Servicios</p>
+                <p className="text-lg lg:text-2xl font-bold text-white">{stats.totalServices}</p>
               </div>
-              <Wrench className="h-8 w-8 text-blue-400" />
+              <Wrench className="h-5 w-5 lg:h-8 lg:w-8 text-blue-400" />
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white/70">Pendientes</p>
-                <p className="text-xl font-bold text-orange-400">{formatAmount(stats.pendingAmount)}</p>
+                <p className="text-xs font-medium text-white/70">Pendientes</p>
+                <p className="text-sm lg:text-xl font-bold text-orange-400">{formatAmount(stats.pendingAmount)}</p>
               </div>
-              <TrendingDown className="h-8 w-8 text-orange-400" />
+              <TrendingDown className="h-5 w-5 lg:h-8 lg:w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
@@ -475,13 +551,13 @@ export default function AdminAccounting() {
         </CardContent>
       </Card>
 
-      {/* Lista de registros */}
+      {/* Lista de registros - Compacta para móvil */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
           <CardTitle className="text-white">Registros Contables ({filteredRecords.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="grid gap-3 grid-cols-1 lg:grid-cols-1">
             {filteredRecords.length === 0 ? (
               <div className="text-center py-8 text-white/70">
                 <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -490,7 +566,7 @@ export default function AdminAccounting() {
             ) : (
               filteredRecords.map((record) => (
                 <Card key={record.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 lg:p-4">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -498,8 +574,8 @@ export default function AdminAccounting() {
                             variant="outline"
                             className={
                               record.type === "service"
-                                ? "bg-blue-500/20 text-blue-300 border-blue-400"
-                                : "bg-purple-500/20 text-purple-300 border-purple-400"
+                                ? "bg-blue-500/20 text-blue-300 border-blue-400 text-xs"
+                                : "bg-purple-500/20 text-purple-300 border-purple-400 text-xs"
                             }
                           >
                             {record.type === "service" ? (
@@ -515,22 +591,22 @@ export default function AdminAccounting() {
                             )}
                           </Badge>
                           {getStatusBadge(record.status)}
-                          <span className="text-sm text-white/70">
+                          <span className="text-xs text-white/70">
                             {new Date(record.date).toLocaleDateString("es-AR")}
                           </span>
                         </div>
 
-                        <div className="grid gap-1 md:grid-cols-2">
+                        <div className="grid gap-1 grid-cols-1 lg:grid-cols-2">
                           <div>
-                            <span className="font-medium text-white">{record.client}</span>
+                            <span className="font-medium text-white text-sm">{record.client}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4 text-green-400" />
-                            <span className="font-bold text-green-400">{formatAmount(record.amount)}</span>
+                            <span className="font-bold text-green-400 text-sm">{formatAmount(record.amount)}</span>
                           </div>
                         </div>
 
-                        <div className="text-sm text-white/70">
+                        <div className="text-xs text-white/70 line-clamp-1 lg:line-clamp-none">
                           {record.type === "service" ? (
                             <>
                               <strong>{(record as ServiceRecord).category}:</strong>{" "}
@@ -545,16 +621,16 @@ export default function AdminAccounting() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-1 ml-2">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-2"
                               onClick={() => setEditingRecord(record)}
                             >
-                              <Edit className="h-4 w-4" />
+                              <Edit className="h-3 w-3" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
@@ -602,7 +678,10 @@ export default function AdminAccounting() {
                                     <Textarea
                                       value={(editingRecord as ServiceRecord).description}
                                       onChange={(e) =>
-                                        setEditingRecord({ ...editingRecord, description: e.target.value })
+                                        setEditingRecord({
+                                          ...editingRecord,
+                                          description: e.target.value,
+                                        } as ServiceRecord)
                                       }
                                     />
                                   </div>
@@ -619,8 +698,13 @@ export default function AdminAccounting() {
                           </DialogContent>
                         </Dialog>
 
-                        <Button size="sm" variant="destructive" onClick={() => deleteRecord(record.id)}>
-                          <Trash2 className="h-4 w-4" />
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteRecord(record.id)}
+                          className="text-xs p-2"
+                        >
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
