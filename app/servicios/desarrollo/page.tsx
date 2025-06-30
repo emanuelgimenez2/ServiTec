@@ -252,7 +252,7 @@ export default function DesarrolloPage() {
               <CardContent className="p-3 sm:p-6">
                 <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2">Cicloturismo Termal</h3>
                 <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
-                  SPG con informacion e iscripción al evento, con analiticas y dashboards completos.
+                  SPA con informacion e iscripción al evento, con analiticas y dashboards completos.
                 </p>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <Badge variant="outline" className="text-xs">
@@ -287,7 +287,7 @@ export default function DesarrolloPage() {
               <CardContent className="p-3 sm:p-6">
                 <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2">El Mangrullo</h3>
                 <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
-                  SPG con informacion de un complejo de departamentos en Federacion, con analiticas y dashboards completos.
+                  SPA con informacion de un complejo de departamentos en Federacion, con analiticas y dashboards completos.
                 </p>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <Badge variant="outline" className="text-xs">
@@ -322,7 +322,7 @@ export default function DesarrolloPage() {
               <CardContent className="p-3 sm:p-6">
                 <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2">Gestoria OAM</h3>
                 <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
-                  SPG con datos y venta de nauticas y automotores.
+                  SPA con datos y venta de nauticas y automotores.
                 </p>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <Badge variant="outline" className="text-xs">
@@ -357,7 +357,7 @@ export default function DesarrolloPage() {
               <CardContent className="p-3 sm:p-6">
                 <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2">Pagina de turnos</h3>
                 <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
-                  SPG con datos y control de turnos para un mayor control.
+                  SPA con datos y control de turnos para un mayor control.
                 </p>
                 <div className="flex flex-wrap gap-1 sm:gap-2">
                   <Badge variant="outline" className="text-xs">

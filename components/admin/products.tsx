@@ -4,7 +4,6 @@ import type React from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -391,7 +390,7 @@ export default function AdminProductsFixed() {
         rating: 4.5,
         reviews: 0,
         isNew: true,
-        isActive: true,
+        isActive: true, // Por defecto siempre activo
         specifications: {
           Marca: newProduct.brand?.trim() || "Sin especificar",
           Descripción: newProduct.description?.trim() || "",
@@ -553,118 +552,174 @@ export default function AdminProductsFixed() {
               Agregar Producto
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Agregar Nuevo Producto</DialogTitle>
-              <DialogDescription>Completa la información del producto para agregarlo al inventario</DialogDescription>
+
+          <DialogContent className="w-[95vw] max-w-[400px] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-3 border-b">
+              <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                ✨ Agregar Producto
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-gray-600">
+                Completa la información del producto
+              </DialogDescription>
             </DialogHeader>
-            <div className="space-y-6">
+
+            <div className="space-y-4 py-3">
               {/* Información básica */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Nombre *</Label>
-                  <Input
-                    placeholder="Nombre del producto"
-                    value={newProduct.name || ""}
-                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                  />
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 sm:p-4 rounded-lg border border-blue-200">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-3 flex items-center">
+                  <Package className="h-4 w-4 mr-2 text-blue-600" />
+                  Información Básica
+                </h3>
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+                      <span className="text-red-500 mr-1">*</span>
+                      Nombre
+                    </Label>
+                    <Input
+                      placeholder="Ej: iPhone 15 Pro Max"
+                      value={newProduct.name || ""}
+                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                      className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+                      <span className="text-red-500 mr-1">*</span>
+                      Categoría
+                    </Label>
+                    <Select
+                      value={newProduct.category || ""}
+                      onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
+                    >
+                      <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Notebooks">📱 Notebooks</SelectItem>
+                        <SelectItem value="Celulares">📱 Celulares</SelectItem>
+                        <SelectItem value="Parlantes">🔊 Parlantes</SelectItem>
+                        <SelectItem value="Streaming">📺 Streaming</SelectItem>
+                        <SelectItem value="Smart Home">🏠 Smart Home</SelectItem>
+                        <SelectItem value="Accesorios">🔌 Accesorios</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Categoría *</Label>
-                  <Select
-                    value={newProduct.category || ""}
-                    onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar categoría" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Notebooks">Notebooks</SelectItem>
-                      <SelectItem value="Celulares">Celulares</SelectItem>
-                      <SelectItem value="Parlantes">Parlantes</SelectItem>
-                      <SelectItem value="Streaming">Streaming</SelectItem>
-                      <SelectItem value="Smart Home">Smart Home</SelectItem>
-                      <SelectItem value="Accesorios">Accesorios</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 mt-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs sm:text-sm font-medium text-gray-700">Marca</Label>
+                    <Input
+                      placeholder="Ej: Apple, Samsung"
+                      value={newProduct.brand || ""}
+                      onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
+                      className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs sm:text-sm font-medium text-gray-700">Descripción</Label>
+                    <Textarea
+                      placeholder="Descripción del producto..."
+                      value={newProduct.description || ""}
+                      onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                      rows={2}
+                      className="text-xs sm:text-sm border-gray-300 resize-none"
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Marca</Label>
-                <Input
-                  placeholder="Marca del producto"
-                  value={newProduct.brand || ""}
-                  onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Descripción</Label>
-                <Textarea
-                  placeholder="Descripción detallada del producto"
-                  value={newProduct.description || ""}
-                  onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                  rows={4}
-                />
               </div>
 
               {/* Precios y stock */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label>Precio *</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    min="0"
-                    step="0.01"
-                    value={newProduct.price || ""}
-                    onChange={(e) => setNewProduct({ ...newProduct, price: Number.parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Precio Original</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    min="0"
-                    step="0.01"
-                    value={newProduct.originalPrice || ""}
-                    onChange={(e) =>
-                      setNewProduct({ ...newProduct, originalPrice: Number.parseFloat(e.target.value) || 0 })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Stock</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    min="0"
-                    value={newProduct.stock || ""}
-                    onChange={(e) => setNewProduct({ ...newProduct, stock: Number.parseInt(e.target.value) || 0 })}
-                  />
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-lg border border-green-200">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-3 flex items-center">
+                  <span className="text-lg mr-2">💰</span>
+                  Precios y Stock
+                </h3>
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+                      <span className="text-red-500 mr-1">*</span>
+                      Precio
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                        $
+                      </span>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
+                        value={newProduct.price || ""}
+                        onChange={(e) =>
+                          setNewProduct({ ...newProduct, price: Number.parseFloat(e.target.value) || 0 })
+                        }
+                        className="h-8 sm:h-10 pl-6 text-xs sm:text-sm border-gray-300"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs sm:text-sm font-medium text-gray-700">Precio Original</Label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                        $
+                      </span>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        step="0.01"
+                        value={newProduct.originalPrice || ""}
+                        onChange={(e) =>
+                          setNewProduct({ ...newProduct, originalPrice: Number.parseFloat(e.target.value) || 0 })
+                        }
+                        className="h-8 sm:h-10 pl-6 text-xs sm:text-sm border-gray-300"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs sm:text-sm font-medium text-gray-700">Stock</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      min="0"
+                      value={newProduct.stock || ""}
+                      onChange={(e) => setNewProduct({ ...newProduct, stock: Number.parseInt(e.target.value) || 0 })}
+                      className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Imágenes */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Imágenes del Producto</Label>
-                  <div className="flex gap-2">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-lg border border-purple-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center">
+                    <ImageIcon className="h-4 w-4 mr-2 text-purple-600" />
+                    Imágenes
+                  </h3>
+                  <div className="flex gap-1 sm:gap-2">
                     <Button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       size="sm"
                       variant="outline"
                       disabled={uploadingImage}
+                      className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
                     >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {uploadingImage ? "Procesando..." : "Subir Imagen"}
+                      <Upload className="h-3 w-3 mr-1" />
+                      {uploadingImage ? "..." : "Subir"}
                     </Button>
-                    <Button type="button" onClick={() => addImageUrl(false)} size="sm" variant="outline">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Agregar URL
+                    <Button
+                      type="button"
+                      onClick={() => addImageUrl(false)}
+                      size="sm"
+                      variant="outline"
+                      className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      URL
                     </Button>
                   </div>
                 </div>
@@ -678,10 +733,10 @@ export default function AdminProductsFixed() {
                 />
 
                 {productImages.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {productImages.map((image, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                      <div key={index} className="space-y-1">
+                        <div className="relative aspect-square bg-gray-100 rounded-md border overflow-hidden">
                           {image ? (
                             <img
                               src={image.startsWith("data:") ? image : image || "/placeholder.svg"}
@@ -693,8 +748,7 @@ export default function AdminProductsFixed() {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="h-8 w-8 text-gray-400" />
-                              <span className="ml-2 text-sm text-gray-500">Vista previa</span>
+                              <ImageIcon className="h-6 w-6 text-gray-400" />
                             </div>
                           )}
                           <Button
@@ -702,22 +756,27 @@ export default function AdminProductsFixed() {
                             onClick={() => removeImageUrl(index, false)}
                             size="sm"
                             variant="destructive"
-                            className="absolute top-2 right-2 h-6 w-6 p-0"
+                            className="absolute top-1 right-1 h-5 w-5 p-0 rounded-full"
                           >
                             <X className="h-3 w-3" />
                           </Button>
+                          {index === 0 && (
+                            <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded">
+                              Principal
+                            </div>
+                          )}
                         </div>
                         {!image.startsWith("data:") && (
                           <Input
                             placeholder="https://ejemplo.com/imagen.jpg"
                             value={image}
                             onChange={(e) => updateImageUrl(index, e.target.value, false)}
-                            className="text-sm"
+                            className="text-xs border-purple-300"
                           />
                         )}
                         {image.startsWith("data:") && (
-                          <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
-                            ✅ Imagen procesada y lista para guardar ({((image.length * 3) / 4 / 1024).toFixed(2)} KB)
+                          <div className="text-xs text-green-700 bg-green-100 p-1 rounded border border-green-300">
+                            ✅ Procesada ({((image.length * 3) / 4 / 1024).toFixed(2)} KB)
                           </div>
                         )}
                       </div>
@@ -726,23 +785,27 @@ export default function AdminProductsFixed() {
                 )}
 
                 {productImages.length === 0 && (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Sube archivos de imagen (se convertirán a base64) o agrega URLs. La primera imagen será la
-                      principal.
-                    </p>
-                    <p className="text-xs text-muted-foreground mb-4">
-                      Las imágenes se redimensionan automáticamente y se comprimen para optimizar el almacenamiento.
-                    </p>
+                  <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 text-center bg-white/50">
+                    <ImageIcon className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+                    <p className="text-xs text-gray-600 mb-2">Sube archivos o agrega URLs</p>
                     <div className="flex gap-2 justify-center">
-                      <Button type="button" onClick={() => fileInputRef.current?.click()} variant="outline">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Subir Imagen
+                      <Button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="outline"
+                        className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
+                      >
+                        <Upload className="h-3 w-3 mr-1" />
+                        Subir
                       </Button>
-                      <Button type="button" onClick={() => addImageUrl(false)} variant="outline">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar URL
+                      <Button
+                        type="button"
+                        onClick={() => addImageUrl(false)}
+                        variant="outline"
+                        className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        URL
                       </Button>
                     </div>
                   </div>
@@ -750,41 +813,58 @@ export default function AdminProductsFixed() {
               </div>
 
               {/* Especificaciones */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Especificaciones Técnicas</Label>
-                  <Button type="button" onClick={() => addSpecification(false)} size="sm" variant="outline">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Agregar Especificación
+              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 sm:p-4 rounded-lg border border-orange-200">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center">
+                    <span className="text-lg mr-2">⚙️</span>
+                    Especificaciones
+                  </h3>
+                  <Button
+                    type="button"
+                    onClick={() => addSpecification(false)}
+                    size="sm"
+                    variant="outline"
+                    className="border-orange-300 text-orange-700 hover:bg-orange-100 text-xs h-7 px-2"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Agregar
                   </Button>
                 </div>
-                {specifications.map((spec, index) => (
-                  <div key={index} className="grid grid-cols-2 gap-2">
-                    <Input
-                      placeholder="Característica (ej: Procesador)"
-                      value={spec.key}
-                      onChange={(e) => updateSpecification(index, "key", e.target.value, false)}
-                    />
-                    <div className="flex gap-2">
+                <div className="space-y-2">
+                  {specifications.map((spec, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-white rounded border border-orange-200"
+                    >
                       <Input
-                        placeholder="Valor (ej: Intel Core i7)"
-                        value={spec.value}
-                        onChange={(e) => updateSpecification(index, "value", e.target.value, false)}
+                        placeholder="Característica"
+                        value={spec.key}
+                        onChange={(e) => updateSpecification(index, "key", e.target.value, false)}
+                        className="border-orange-300 text-xs h-7"
                       />
-                      <Button
-                        type="button"
-                        onClick={() => removeSpecification(index, false)}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Input
+                          placeholder="Valor"
+                          value={spec.value}
+                          onChange={(e) => updateSpecification(index, "value", e.target.value, false)}
+                          className="border-orange-300 text-xs h-7"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => removeSpecification(index, false)}
+                          size="sm"
+                          variant="outline"
+                          className="border-red-300 text-red-600 hover:bg-red-50 h-7 w-7 p-0"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-3 border-t">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -792,6 +872,7 @@ export default function AdminProductsFixed() {
                     resetForm()
                   }}
                   disabled={isSubmitting}
+                  className="px-3 text-xs h-8"
                 >
                   Cancelar
                 </Button>
@@ -800,8 +881,9 @@ export default function AdminProductsFixed() {
                   disabled={
                     isSubmitting || !newProduct.name?.trim() || !newProduct.price || !newProduct.category?.trim()
                   }
+                  className="px-3 text-xs h-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
-                  {isSubmitting ? "Agregando..." : "Agregar Producto"}
+                  {isSubmitting ? "Agregando..." : "✨ Agregar"}
                 </Button>
               </div>
             </div>
@@ -927,7 +1009,7 @@ export default function AdminProductsFixed() {
           <CardTitle className="text-white">Productos ({filteredProducts.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
             {filteredProducts.length === 0 ? (
               <div className="col-span-full text-center py-8 text-white/70">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -940,64 +1022,46 @@ export default function AdminProductsFixed() {
             ) : (
               filteredProducts.map((product) => (
                 <Card key={product.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
-                  <CardContent className="p-3">
-                    <div className="space-y-2">
-                      <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-100">
+                  <CardContent className="p-2">
+                    <div className="space-y-1">
+                      <div className="aspect-square relative overflow-hidden rounded-md bg-gray-100 ">
                         <img
                           src={product.image?.startsWith("data:") ? product.image : product.image || "/placeholder.svg"}
                           alt={product.name}
                           className="object-cover w-full h-full"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex items-start justify-between">
-                          <h3 className="font-semibold text-xs line-clamp-2 text-white">{product.name}</h3>
-                          <div className="flex flex-col gap-1">
-                            <Badge variant={product.isActive ? "default" : "secondary"} className="text-xs">
-                              {product.isActive ? "Activo" : "Inactivo"}
-                            </Badge>
-                            {product.stock <= 5 && (
-                              <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-                                <AlertTriangle className="w-2 h-2" />
-                                Bajo
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <p className="text-xs text-white/70 line-clamp-1">{product.description}</p>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className="text-white/80 border-white/30 text-xs">
-                            {product.category}
-                          </Badge>
-                          <span className="text-xs font-bold text-green-400">${product.price.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-white/70">Stock: {product.stock}</span>
-                          <span className="text-white/70">
-                            {new Date(product.createdAt).toLocaleDateString("es-AR")}
-                          </span>
+                     <div className="space-y-1">
+                        <h3 className="font-semibold text-xs text-white">{product.name}</h3>
+                        <p className="text-white/70 text-xs">${product.price.toLocaleString()}</p>
+                        <div className="flex flex-col text-xs space-y-0.5">
+                          <span className="text-white/60">Stock: {product.stock}</span>
+                          <span className="text-white/60">Vendidos: {product.reviews || 0}</span>
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 pt-1">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1"
+                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1 h-6"
                               onClick={() => setSelectedProduct(product)}
                             >
-                              <Eye className="h-3 w-3" />
+                              <Eye className="h-3 w-3 lg:mr-1" />
+                              <span className="hidden lg:inline">Ver</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Detalles del Producto</DialogTitle>
+                          <DialogContent className="w-[95vw] max-w-[350px] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader className="pb-2 border-b">
+                              <DialogTitle className="text-sm sm:text-lg font-semibold">
+                                Detalles del Producto
+                              </DialogTitle>
                             </DialogHeader>
                             {selectedProduct && (
-                              <div className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div>
+                              <div className="p-2">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  <div className="aspect-square w-full relative mb-2 rounded-lg overflow-hidden">
                                     <img
                                       src={
                                         selectedProduct.image?.startsWith("data:")
@@ -1005,13 +1069,15 @@ export default function AdminProductsFixed() {
                                           : selectedProduct.image || "/placeholder.svg"
                                       }
                                       alt={selectedProduct.name}
-                                      className="w-full h-64 object-cover rounded-lg"
+                                      className="w-full h-full object-cover"
                                     />
                                   </div>
-                                  <div className="space-y-3">
-                                    <h3 className="text-xl font-bold">{selectedProduct.name}</h3>
-                                    <p className="text-gray-600">{selectedProduct.description}</p>
-                                    <div className="space-y-2">
+                                  <div className="space-y-2">
+                                    <h3 className="text-sm sm:text-lg font-bold">{selectedProduct.name}</h3>
+                                    <p className="text-xs sm:text-sm text-gray-600 line-clamp-3">
+                                      {selectedProduct.description}
+                                    </p>
+                                    <div className="space-y-1 text-xs sm:text-sm">
                                       <p>
                                         <strong>Categoría:</strong> {selectedProduct.category}
                                       </p>
@@ -1032,13 +1098,16 @@ export default function AdminProductsFixed() {
                                 </div>
                                 {selectedProduct.specifications &&
                                   Object.keys(selectedProduct.specifications).length > 0 && (
-                                    <div>
-                                      <h4 className="font-semibold mb-2">Especificaciones</h4>
-                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <div className="mt-3">
+                                      <h4 className="text-xs sm:text-sm font-semibold mb-2">Especificaciones</h4>
+                                      <div className="grid grid-cols-1 gap-1">
                                         {Object.entries(selectedProduct.specifications).map(([key, value]) => (
-                                          <div key={key} className="flex justify-between p-2 bg-gray-50 rounded">
+                                          <div
+                                            key={key}
+                                            className="flex justify-between p-1 bg-gray-50 rounded text-xs"
+                                          >
                                             <span className="font-medium">{key}:</span>
-                                            <span>{value}</span>
+                                            <span className="text-right">{value}</span>
                                           </div>
                                         ))}
                                       </div>
@@ -1053,94 +1122,118 @@ export default function AdminProductsFixed() {
                             <Button
                               variant="outline"
                               size="sm"
-                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1"
+                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1 h-6"
                               onClick={() => prepareEditData(product)}
                             >
-                              <Edit className="h-3 w-3" />
+                              <Edit className="h-3 w-3 lg:mr-1" />
+                              <span className="hidden lg:inline">Editar</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>Editar Producto</DialogTitle>
-                              <DialogDescription>Modifica la información del producto</DialogDescription>
+
+                          <DialogContent className="w-[95vw] max-w-[400px] sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader className="pb-2 border-b">
+                              <DialogTitle className="text-sm sm:text-lg font-bold text-blue-600">
+                                ✏️ Editar Producto
+                              </DialogTitle>
+                              <DialogDescription className="text-xs">
+                                Modifica la información del producto
+                              </DialogDescription>
                             </DialogHeader>
                             {editingProduct && (
-                              <div className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div className="space-y-2">
-                                    <Label>Nombre</Label>
+                              <div className="space-y-3 py-2">
+                                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-medium">Nombre</Label>
                                     <Input
                                       value={editingProduct.name}
                                       onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                                      className="h-7 text-xs"
                                     />
                                   </div>
-                                  <div className="space-y-2">
-                                    <Label>Categoría</Label>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-medium">Categoría</Label>
                                     <Select
                                       value={editingProduct.category}
-                                      onValueChange={(value) =>
-                                        setEditingProduct({ ...editingProduct, category: value })
-                                      }
+                                      onChange={(value) => setEditingProduct({ ...editingProduct, category: value })}
                                     >
-                                      <SelectTrigger>
+                                      <SelectTrigger className="h-7 text-xs">
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="Notebooks">Notebooks</SelectItem>
-                                        <SelectItem value="Celulares">Celulares</SelectItem>
-                                        <SelectItem value="Parlantes">Parlantes</SelectItem>
-                                        <SelectItem value="Streaming">Streaming</SelectItem>
-                                        <SelectItem value="Smart Home">Smart Home</SelectItem>
-                                        <SelectItem value="Accesorios">Accesorios</SelectItem>
+                                        <SelectItem value="Notebooks">📱 Notebooks</SelectItem>
+                                        <SelectItem value="Celulares">📱 Celulares</SelectItem>
+                                        <SelectItem value="Parlantes">🔊 Parlantes</SelectItem>
+                                        <SelectItem value="Streaming">📺 Streaming</SelectItem>
+                                        <SelectItem value="Smart Home">🏠 Smart Home</SelectItem>
+                                        <SelectItem value="Accesorios">🔌 Accesorios</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
                                 </div>
-                                <div className="space-y-2">
-                                  <Label>Marca</Label>
-                                  <Input
-                                    value={editingProduct.brand || ""}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, brand: e.target.value })}
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Descripción</Label>
-                                  <Textarea
-                                    value={editingProduct.description}
-                                    onChange={(e) =>
-                                      setEditingProduct({ ...editingProduct, description: e.target.value })
-                                    }
-                                  />
-                                </div>
-                                <div className="grid gap-4 md:grid-cols-3">
-                                  <div className="space-y-2">
-                                    <Label>Precio</Label>
+
+                                <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-medium">Marca</Label>
                                     <Input
-                                      type="number"
-                                      value={editingProduct.price}
-                                      onChange={(e) =>
-                                        setEditingProduct({
-                                          ...editingProduct,
-                                          price: Number.parseFloat(e.target.value) || 0,
-                                        })
-                                      }
+                                      value={editingProduct.brand || ""}
+                                      onChange={(e) => setEditingProduct({ ...editingProduct, brand: e.target.value })}
+                                      className="h-7 text-xs"
                                     />
                                   </div>
-                                  <div className="space-y-2">
-                                    <Label>Precio Original</Label>
-                                    <Input
-                                      type="number"
-                                      value={editingProduct.originalPrice || ""}
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-medium">Descripción</Label>
+                                    <Textarea
+                                      value={editingProduct.description}
                                       onChange={(e) =>
-                                        setEditingProduct({
-                                          ...editingProduct,
-                                          originalPrice: Number.parseFloat(e.target.value) || 0,
-                                        })
+                                        setEditingProduct({ ...editingProduct, description: e.target.value })
                                       }
+                                      rows={2}
+                                      className="resize-none text-xs"
                                     />
                                   </div>
-                                  <div className="space-y-2">
-                                    <Label>Stock</Label>
+                                </div>
+
+                                <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-medium">Precio</Label>
+                                    <div className="relative">
+                                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                                        $
+                                      </span>
+                                      <Input
+                                        type="number"
+                                        value={editingProduct.price}
+                                        onChange={(e) =>
+                                          setEditingProduct({
+                                            ...editingProduct,
+                                            price: Number.parseFloat(e.target.value) || 0,
+                                          })
+                                        }
+                                        className="h-7 pl-6 text-xs"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-medium">Precio Original</Label>
+                                    <div className="relative">
+                                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                                        $
+                                      </span>
+                                      <Input
+                                        type="number"
+                                        value={editingProduct.originalPrice || ""}
+                                        onChange={(e) =>
+                                          setEditingProduct({
+                                            ...editingProduct,
+                                            originalPrice: Number.parseFloat(e.target.value) || 0,
+                                          })
+                                        }
+                                        className="h-7 pl-6 text-xs"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs font-medium">Stock</Label>
                                     <Input
                                       type="number"
                                       value={editingProduct.stock}
@@ -1150,33 +1243,36 @@ export default function AdminProductsFixed() {
                                           stock: Number.parseInt(e.target.value) || 0,
                                         })
                                       }
+                                      className="h-7 text-xs"
                                     />
                                   </div>
                                 </div>
 
                                 {/* Imágenes para edición */}
-                                <div className="space-y-4">
-                                  <div className="flex items-center justify-between">
-                                    <Label>Imágenes del Producto</Label>
-                                    <div className="flex gap-2">
+                                <div className="bg-purple-50 p-3 rounded-lg border border-purple-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <Label className="text-xs font-medium">Imágenes</Label>
+                                    <div className="flex gap-1">
                                       <Button
                                         type="button"
                                         onClick={() => editFileInputRef.current?.click()}
                                         size="sm"
                                         variant="outline"
                                         disabled={uploadingImage}
+                                        className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-6 px-2"
                                       >
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        {uploadingImage ? "Procesando..." : "Subir Imagen"}
+                                        <Upload className="h-3 w-3 mr-1" />
+                                        {uploadingImage ? "..." : "Subir"}
                                       </Button>
                                       <Button
                                         type="button"
                                         onClick={() => addImageUrl(true)}
                                         size="sm"
                                         variant="outline"
+                                        className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-6 px-2"
                                       >
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Agregar URL
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        URL
                                       </Button>
                                     </div>
                                   </div>
@@ -1190,10 +1286,10 @@ export default function AdminProductsFixed() {
                                   />
 
                                   {editImages.length > 0 && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                       {editImages.map((image, index) => (
-                                        <div key={index} className="space-y-2">
-                                          <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                                        <div key={index} className="space-y-1">
+                                          <div className="relative aspect-square bg-gray-100 rounded-md overflow-hidden border">
                                             {image ? (
                                               <img
                                                 src={image.startsWith("data:") ? image : image || "/placeholder.svg"}
@@ -1205,7 +1301,7 @@ export default function AdminProductsFixed() {
                                               />
                                             ) : (
                                               <div className="w-full h-full flex items-center justify-center">
-                                                <ImageIcon className="h-8 w-8 text-gray-400" />
+                                                <ImageIcon className="h-6 w-6 text-gray-400" />
                                               </div>
                                             )}
                                             <Button
@@ -1213,7 +1309,7 @@ export default function AdminProductsFixed() {
                                               onClick={() => removeImageUrl(index, true)}
                                               size="sm"
                                               variant="destructive"
-                                              className="absolute top-2 right-2 h-6 w-6 p-0"
+                                              className="absolute top-1 right-1 h-5 w-5 p-0 rounded-full"
                                             >
                                               <X className="h-3 w-3" />
                                             </Button>
@@ -1223,12 +1319,12 @@ export default function AdminProductsFixed() {
                                               placeholder="https://ejemplo.com/imagen.jpg"
                                               value={image}
                                               onChange={(e) => updateImageUrl(index, e.target.value, true)}
-                                              className="text-sm"
+                                              className="text-xs"
                                             />
                                           )}
                                           {image.startsWith("data:") && (
-                                            <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
-                                              ✅ Imagen procesada ({((image.length * 3) / 4 / 1024).toFixed(2)} KB)
+                                            <div className="text-xs text-green-700 bg-green-100 p-1 rounded border border-green-300">
+                                              ✅ Procesada ({((image.length * 3) / 4 / 1024).toFixed(2)} KB)
                                             </div>
                                           )}
                                         </div>
@@ -1238,71 +1334,94 @@ export default function AdminProductsFixed() {
                                 </div>
 
                                 {/* Especificaciones para edición */}
-                                <div className="space-y-4">
-                                  <div className="flex items-center justify-between">
-                                    <Label>Especificaciones Técnicas</Label>
+                                <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <Label className="text-xs font-medium">Especificaciones</Label>
                                     <Button
                                       type="button"
                                       onClick={() => addSpecification(true)}
                                       size="sm"
                                       variant="outline"
+                                      className="border-orange-300 text-orange-700 hover:bg-orange-100 text-xs h-6 px-2"
                                     >
-                                      <Plus className="h-4 w-4 mr-2" />
-                                      Agregar Especificación
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Agregar
                                     </Button>
                                   </div>
-                                  {editSpecifications.map((spec, index) => (
-                                    <div key={index} className="grid grid-cols-2 gap-2">
-                                      <Input
-                                        placeholder="Característica (ej: Procesador)"
-                                        value={spec.key}
-                                        onChange={(e) => updateSpecification(index, "key", e.target.value, true)}
-                                      />
-                                      <div className="flex gap-2">
+                                  <div className="space-y-2">
+                                    {editSpecifications.map((spec, index) => (
+                                      <div key={index} className="grid grid-cols-2 gap-2">
                                         <Input
-                                          placeholder="Valor (ej: Intel Core i7)"
-                                          value={spec.value}
-                                          onChange={(e) => updateSpecification(index, "value", e.target.value, true)}
+                                          placeholder="Característica"
+                                          value={spec.key}
+                                          onChange={(e) => updateSpecification(index, "key", e.target.value, true)}
+                                          className="text-xs h-7"
                                         />
-                                        <Button
-                                          type="button"
-                                          onClick={() => removeSpecification(index, true)}
-                                          size="sm"
-                                          variant="outline"
-                                        >
-                                          <X className="h-4 w-4" />
-                                        </Button>
+                                        <div className="flex gap-1">
+                                          <Input
+                                            placeholder="Valor"
+                                            value={spec.value}
+                                            onChange={(e) => updateSpecification(index, "value", e.target.value, true)}
+                                            className="text-xs h-7"
+                                          />
+                                          <Button
+                                            type="button"
+                                            onClick={() => removeSpecification(index, true)}
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-7 w-7 p-0"
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    ))}
+                                  </div>
                                 </div>
 
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={resetEditForm}>
+                                <div className="flex justify-end gap-2 pt-2 border-t">
+                                  <Button
+                                    variant="outline"
+                                    onClick={resetEditForm}
+                                    className="text-xs px-3 h-7 bg-transparent"
+                                  >
                                     Cancelar
                                   </Button>
-                                  <Button onClick={updateProduct}>Actualizar</Button>
+                                  <Button
+                                    onClick={updateProduct}
+                                    className="bg-blue-600 hover:bg-blue-700 text-xs px-3 h-7"
+                                  >
+                                    Actualizar
+                                  </Button>
+                                </div>
+
+                                {/* Botones de acción adicionales */}
+                                <div className="flex gap-2 pt-2 border-t">
+                                  <Button
+                                    onClick={() => toggleProductStatus(editingProduct.id!)}
+                                    variant={editingProduct.isActive ? "destructive" : "default"}
+                                    className="flex-1 h-7 text-xs"
+                                  >
+                                    {editingProduct.isActive ? "Desactivar" : "Activar"}
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      if (confirm("¿Estás seguro de que quieres eliminar este producto?")) {
+                                        deleteProduct(editingProduct.id!)
+                                        resetEditForm()
+                                      }
+                                    }}
+                                    variant="destructive"
+                                    className="flex-1 h-7 text-xs"
+                                  >
+                                    <Trash2 className="h-3 w-3 mr-1" />
+                                    Eliminar
+                                  </Button>
                                 </div>
                               </div>
                             )}
                           </DialogContent>
                         </Dialog>
-                        <Button
-                          size="sm"
-                          variant={product.isActive ? "destructive" : "default"}
-                          onClick={() => toggleProductStatus(product.id!)}
-                          className="text-xs p-1"
-                        >
-                          {product.isActive ? "Des" : "Act"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteProduct(product.id!)}
-                          className="p-1"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
