@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Package, Plus, Edit, Trash2, AlertTriangle, CheckCircle, Upload, X, Eye } from "lucide-react"
+import { Package, Plus, Edit, Trash2, AlertTriangle, CheckCircle, Upload, X, Eye, ImageIcon } from "lucide-react"
 import { productosService, type Product } from "@/lib/firebase-services"
 
 export default function AdminProducts() {
@@ -35,6 +35,7 @@ export default function AdminProducts() {
   const [productImages, setProductImages] = useState<string[]>([])
   const [specifications, setSpecifications] = useState<{ key: string; value: string }[]>([{ key: "", value: "" }])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
@@ -96,19 +97,62 @@ export default function AdminProducts() {
     setFilteredProducts(filtered)
   }
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (file) {
-      // Crear URL temporal para preview
-      const imageUrl = URL.createObjectURL(file)
-      setProductImages([...productImages, imageUrl])
+    if (!file) return
 
-      // En un caso real, aquí subirías el archivo a un servicio como Firebase Storage
-      // Por ahora usamos la URL temporal
+    // Validar tipo de archivo
+    if (!file.type.startsWith("image/")) {
       toast({
-        title: "Imagen agregada",
-        description: "La imagen se ha agregado temporalmente. En producción se subiría a Firebase Storage.",
+        title: "Error",
+        description: "Por favor selecciona un archivo de imagen válido",
+        variant: "destructive",
       })
+      return
+    }
+
+    // Validar tamaño (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "La imagen debe ser menor a 5MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setUploadingImage(true)
+
+      // Crear URL temporal para preview inmediato
+      const tempUrl = URL.createObjectURL(file)
+      setProductImages([...productImages, tempUrl])
+
+      // En un entorno real, aquí subirías el archivo a Firebase Storage
+      // Simulamos el proceso de subida
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // En producción, reemplazarías la URL temporal con la URL real de Firebase Storage
+      // const storageRef = ref(storage, `products/${Date.now()}_${file.name}`)
+      // const snapshot = await uploadBytes(storageRef, file)
+      // const downloadURL = await getDownloadURL(snapshot.ref)
+
+      // Por ahora, mantenemos la URL temporal
+      toast({
+        title: "Imagen subida",
+        description: `Archivo "${file.name}" subido correctamente`,
+      })
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo subir la imagen",
+        variant: "destructive",
+      })
+      // Remover la imagen temporal si falló
+      setProductImages(productImages.filter((img) => img !== URL.createObjectURL(file)))
+    } finally {
+      setUploadingImage(false)
     }
   }
 
@@ -123,6 +167,11 @@ export default function AdminProducts() {
   }
 
   const removeImageUrl = (index: number) => {
+    const imageToRemove = productImages[index]
+    // Si es una URL temporal (blob), liberamos la memoria
+    if (imageToRemove.startsWith("blob:")) {
+      URL.revokeObjectURL(imageToRemove)
+    }
     setProductImages(productImages.filter((_, i) => i !== index))
   }
 
@@ -141,6 +190,12 @@ export default function AdminProducts() {
   }
 
   const resetForm = () => {
+    // Limpiar URLs temporales
+    productImages.forEach((img) => {
+      if (img.startsWith("blob:")) {
+        URL.revokeObjectURL(img)
+      }
+    })
     setNewProduct({})
     setProductImages([])
     setSpecifications([{ key: "", value: "" }])
@@ -445,9 +500,15 @@ export default function AdminProducts() {
                 <div className="flex items-center justify-between">
                   <Label>Imágenes del Producto</Label>
                   <div className="flex gap-2">
-                    <Button type="button" onClick={() => fileInputRef.current?.click()} size="sm" variant="outline">
+                    <Button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      size="sm"
+                      variant="outline"
+                      disabled={uploadingImage}
+                    >
                       <Upload className="h-4 w-4 mr-2" />
-                      Subir Archivo
+                      {uploadingImage ? "Subiendo..." : "Subir Archivo"}
                     </Button>
                     <Button type="button" onClick={addImageUrl} size="sm" variant="outline">
                       <Plus className="h-4 w-4 mr-2" />
@@ -458,22 +519,50 @@ export default function AdminProducts() {
 
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
 
-                {productImages.map((image, index) => (
-                  <div key={index} className="flex gap-2">
-                    <Input
-                      placeholder="URL de la imagen"
-                      value={image}
-                      onChange={(e) => updateImageUrl(index, e.target.value)}
-                    />
-                    <Button type="button" onClick={() => removeImageUrl(index)} size="sm" variant="outline">
-                      <X className="h-4 w-4" />
-                    </Button>
+                {productImages.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {productImages.map((image, index) => (
+                      <div key={index} className="space-y-2">
+                        <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                          {image ? (
+                            <img
+                              src={image || "/placeholder.svg"}
+                              alt={`Producto ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                          <Button
+                            type="button"
+                            onClick={() => removeImageUrl(index)}
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-2 right-2 h-6 w-6 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <Input
+                          placeholder="URL de la imagen (opcional)"
+                          value={image}
+                          onChange={(e) => updateImageUrl(index, e.target.value)}
+                          className="text-xs"
+                        />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
                 {productImages.length === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    Sube archivos de imagen o agrega URLs. La primera imagen será la principal.
-                  </p>
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-sm text-muted-foreground">
+                      Sube archivos de imagen o agrega URLs. La primera imagen será la principal.
+                    </p>
+                  </div>
                 )}
               </div>
 

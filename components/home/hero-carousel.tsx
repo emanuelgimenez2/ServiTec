@@ -14,7 +14,8 @@ const slides = [
     icon: Monitor,
     buttonText: "Ver Servicios",
     buttonLink: "/servicios/reparacion",
-    image: "/foto 1 pc.png",
+    desktopImage: "/foto 1 pc.png",
+    mobileImage: "/foto 1 cel.png",
     gradient: "from-blue-600 via-purple-600 to-orange-500",
   },
   {
@@ -25,7 +26,8 @@ const slides = [
     icon: Satellite,
     buttonText: "Contactar",
     buttonLink: "/contacto",
-    image: "/foto 1 pc.png",
+    desktopImage: "/foto 1 pc.png",
+    mobileImage: "/foto 1 cel.png",
     gradient: "from-orange-500 via-red-500 to-purple-600",
   },
   {
@@ -36,7 +38,8 @@ const slides = [
     icon: Camera,
     buttonText: "Ver Instalaciones",
     buttonLink: "/servicios/camaras",
-    image: "/foto 1 pc.png",
+    desktopImage: "/foto 1 pc.png",
+    mobileImage: "/foto 1 cel.png",
     gradient: "from-purple-600 via-blue-600 to-cyan-500",
   },
   {
@@ -47,7 +50,8 @@ const slides = [
     icon: Globe,
     buttonText: "Ver Catálogo",
     buttonLink: "/tienda",
-    image: "/foto 1 pc.png",
+    desktopImage: "/foto 1 pc.png",
+    mobileImage: "/foto 1 cel.png",
     gradient: "from-cyan-500 via-blue-500 to-purple-600",
   },
 ]
@@ -81,10 +85,21 @@ export default function HeroCarousel() {
         <div className="absolute inset-0 bg-black/30" />
       </div>
 
-      {/* Background Image */}
-      <div className="absolute inset-0">
+      {/* Background Images - Desktop */}
+      <div className="absolute inset-0 hidden md:block">
         <Image
-          src={currentSlideData.image || "/placeholder.svg"}
+          src={currentSlideData.desktopImage || "/placeholder.svg"}
+          alt={currentSlideData.title}
+          fill
+          className="object-cover opacity-20"
+          priority
+        />
+      </div>
+
+      {/* Background Images - Mobile */}
+      <div className="absolute inset-0 block md:hidden">
+        <Image
+          src={currentSlideData.mobileImage || "/placeholder.svg"}
           alt={currentSlideData.title}
           fill
           className="object-cover opacity-20"
@@ -95,33 +110,33 @@ export default function HeroCarousel() {
       {/* Content */}
       <div className="relative z-10 h-full flex items-center">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="max-w-3xl">
+          <div className="max-w-3xl text-center md:text-left">
             {/* Icon */}
-            <div className="mb-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 backdrop-blur-sm rounded-full">
-                <IconComponent className="w-8 h-8 text-white" />
+            <div className="mb-4 md:mb-6 flex justify-center md:justify-start">
+              <div className="inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-white/10 backdrop-blur-sm rounded-full">
+                <IconComponent className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
             </div>
 
             {/* Main Title */}
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 leading-tight">ServiTec</h1>
+            <h1 className="text-4xl md:text-7xl font-bold text-white mb-2 md:mb-4 leading-tight">ServiTec</h1>
 
             {/* Subtitle */}
-            <p className="text-xl md:text-2xl text-white/90 mb-2">Soluciones tecnológicas a tu alcance</p>
+            <p className="text-lg md:text-2xl text-white/90 mb-3 md:mb-2">Soluciones tecnológicas a tu alcance</p>
 
             {/* Slide Title */}
-            <h2 className="text-2xl md:text-4xl font-bold text-white mb-4">{currentSlideData.title}</h2>
+            <h2 className="text-xl md:text-4xl font-bold text-white mb-2 md:mb-4">{currentSlideData.title}</h2>
 
             {/* Slide Subtitle */}
-            <p className="text-lg md:text-xl text-orange-300 mb-4">{currentSlideData.subtitle}</p>
+            <p className="text-base md:text-xl text-orange-300 mb-3 md:mb-4">{currentSlideData.subtitle}</p>
 
             {/* Description */}
-            <p className="text-lg text-white/80 mb-8 max-w-2xl">{currentSlideData.description}</p>
+            <p className="text-sm md:text-lg text-white/80 mb-6 md:mb-8 max-w-2xl mx-auto md:mx-0 px-4 md:px-0">{currentSlideData.description}</p>
 
             {/* CTA Button */}
             <Button
               size="lg"
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold px-8 py-4 text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold px-6 py-3 md:px-8 md:py-4 text-base md:text-lg rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
             >
               {currentSlideData.buttonText}
             </Button>
@@ -157,8 +172,8 @@ export default function HeroCarousel() {
         ))}
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 right-8 z-20 text-white/70 text-sm">
+      {/* Scroll Indicator - Hidden on mobile */}
+      <div className="absolute bottom-8 right-8 z-20 text-white/70 text-sm hidden md:block">
         <div className="flex items-center space-x-2">
           <span>Desliza para ver más</span>
           <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">

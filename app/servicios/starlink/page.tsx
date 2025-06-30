@@ -1,15 +1,42 @@
 "use client"
-
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 import { CheckCircle } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Satellite, Wifi, Globe, Zap, Shield, Clock, Award, Calculator, Users, TrendingUp } from "lucide-react"
+import { Satellite, Wifi, Globe, Zap, Shield, Clock, Award, Users } from "lucide-react"
 
 export default function StarlinkPage() {
   const [showCalculator, setShowCalculator] = useState(false)
+  const [showAllPlans, setShowAllPlans] = useState(false)
+  const [residentialPlan, setResidentialPlan] = useState("lite")
+  const [itinerantePlan, setItinerantePlan] = useState("10gb")
+
+  const residentialData = {
+    lite: {
+      price: "$38.000",
+      specs: ["45-130 Mbps descarga", "11-26 Mbps carga", "25-60ms latencia", "Datos ilimitados (sin prioridad)"],
+    },
+    comun: {
+      price: "$56.100",
+      specs: ["45-230 Mbps descarga", "10-25 Mbps carga", "25-60ms latencia", "Datos ilimitados (mayor prioridad)"],
+    },
+  }
+
+  const itineranteData = {
+    "10gb": {
+      price: "$12.000",
+      specs: ["45-230 Mbps descarga", "10-25 Mbps carga", "25-60ms latencia", "10 GB/mes (pago por GB extra)"],
+    },
+    "50gb": {
+      price: "$63.000",
+      specs: ["45-230 Mbps descarga", "10-25 Mbps carga", "25-60ms latencia", "50 GB/mes (pago por GB extra)"],
+    },
+    ilimitado: {
+      price: "$87.500",
+      specs: ["100-280 Mbps descarga", "14-30 Mbps carga", "25-60ms latencia (>100ms altamar)", "Datos ilimitados"],
+    },
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 pt-16">
@@ -67,110 +94,109 @@ export default function StarlinkPage() {
               cualquier ubicación
             </p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
             <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-              <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-6">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Wifi className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <CardHeader className="text-center pb-2 sm:pb-4 p-2 sm:p-6">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Wifi className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Alta Velocidad</CardTitle>
+                <CardTitle className="text-xs sm:text-lg lg:text-xl font-bold text-gray-900">Alta Velocidad</CardTitle>
               </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
-                  Velocidades de descarga de hasta 200 Mbps y carga de hasta 20 Mbps, ideales para streaming, gaming y
-                  trabajo remoto.
+              <CardContent className="text-center p-2 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4">
+                  Velocidades de hasta 200 Mbps ideales para streaming y gaming.
                 </p>
-                <div className="bg-blue-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-blue-700">Perfecto para familias y empresas</p>
+                <div className="bg-blue-50 rounded-lg p-1 sm:p-3">
+                  <p className="text-xs sm:text-sm font-semibold text-blue-700">Perfecto para familias</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-              <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-6">
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Globe className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <CardHeader className="text-center pb-2 sm:pb-4 p-2 sm:p-6">
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Globe className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">
+                <CardTitle className="text-xs sm:text-lg lg:text-xl font-bold text-gray-900">
                   Cobertura Global
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
-                  Disponible en zonas rurales y urbanas donde otros proveedores no llegan. Sin limitaciones geográficas.
+              <CardContent className="text-center p-2 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4">
+                  Disponible donde otros proveedores no llegan.
                 </p>
-                <div className="bg-green-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-green-700">Conectividad donde la necesites</p>
+                <div className="bg-green-50 rounded-lg p-1 sm:p-3">
+                  <p className="text-xs sm:text-sm font-semibold text-green-700">Conectividad total</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-              <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-6">
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <CardHeader className="text-center pb-2 sm:pb-4 p-2 sm:p-6">
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Zap className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Baja Latencia</CardTitle>
+                <CardTitle className="text-xs sm:text-lg lg:text-xl font-bold text-gray-900">Baja Latencia</CardTitle>
               </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
-                  Latencia de 20-40ms, comparable a conexiones terrestres. Ideal para videollamadas y gaming online.
+              <CardContent className="text-center p-2 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4">
+                  20-40ms, ideal para videollamadas y gaming.
                 </p>
-                <div className="bg-purple-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-purple-700">Experiencia fluida garantizada</p>
+                <div className="bg-purple-50 rounded-lg p-1 sm:p-3">
+                  <p className="text-xs sm:text-sm font-semibold text-purple-700">Experiencia fluida</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-              <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-6">
-                <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <CardHeader className="text-center pb-2 sm:pb-4 p-2 sm:p-6">
+                <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-full w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Clock className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">
+                <CardTitle className="text-xs sm:text-lg lg:text-xl font-bold text-gray-900">
                   Instalación Rápida
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
-                  Instalación profesional en 2-4 horas. Kit completo incluido con antena, módem y todos los accesorios.
+              <CardContent className="text-center p-2 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4">
+                  Instalación en 2-4 horas. Kit completo incluido.
                 </p>
-                <div className="bg-orange-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-orange-700">Listo para usar el mismo día</p>
+                <div className="bg-orange-50 rounded-lg p-1 sm:p-3">
+                  <p className="text-xs sm:text-sm font-semibold text-orange-700">Listo el mismo día</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-              <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-6">
-                <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <CardHeader className="text-center pb-2 sm:pb-4 p-2 sm:p-6">
+                <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-full w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Shield className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Sin Contratos</CardTitle>
+                <CardTitle className="text-xs sm:text-lg lg:text-xl font-bold text-gray-900">Sin Contratos</CardTitle>
               </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
-                  Flexibilidad total sin compromisos a largo plazo. Pausa o cancela tu servicio cuando quieras.
+              <CardContent className="text-center p-2 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4">
+                  Flexibilidad total sin compromisos a largo plazo.
                 </p>
-                <div className="bg-teal-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-teal-700">Libertad y flexibilidad</p>
+                <div className="bg-teal-50 rounded-lg p-1 sm:p-3">
+                  <p className="text-xs sm:text-sm font-semibold text-teal-700">Libertad total</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
-              <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-6">
-                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <CardHeader className="text-center pb-2 sm:pb-4 p-2 sm:p-6">
+                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full w-10 h-10 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Users className="w-5 h-5 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Soporte 24/7</CardTitle>
+                <CardTitle className="text-xs sm:text-lg lg:text-xl font-bold text-gray-900">Soporte 24/7</CardTitle>
               </CardHeader>
-              <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
-                  Atención técnica especializada las 24 horas, los 7 días de la semana. Soporte local en español.
+              <CardContent className="text-center p-2 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4">
+                  Atención técnica 24/7. Soporte local en español.
                 </p>
-                <div className="bg-indigo-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-indigo-700">Siempre estamos para ayudarte</p>
+                <div className="bg-indigo-50 rounded-lg p-1 sm:p-3">
+                  <p className="text-xs sm:text-sm font-semibold text-indigo-700">Siempre disponible</p>
                 </div>
               </CardContent>
             </Card>
@@ -187,219 +213,305 @@ export default function StarlinkPage() {
               Opciones flexibles para hogares y empresas, con la mejor relación calidad-precio del mercado
             </p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
-            {/* Plan Residencial */}
-            <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 sm:p-6">
-                <div className="flex items-center justify-between mb-2 sm:mb-4">
-                  <h3 className="text-lg sm:text-2xl font-bold">Residencial</h3>
-                  <div className="bg-white/20 rounded-full p-1 sm:p-2">
-                    <Wifi className="w-4 h-4 sm:w-6 sm:h-6" />
-                  </div>
-                </div>
-                <div className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">$99</div>
-                <p className="text-blue-100 text-sm sm:text-base">por mes</p>
-              </div>
-              <CardContent className="p-3 sm:p-6">
-                <ul className="space-y-2 sm:space-y-4 mb-4 sm:mb-6">
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Hasta 100 Mbps de descarga</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Hasta 10 Mbps de carga</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Latencia 20-40ms</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Datos ilimitados</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Kit de instalación incluido</span>
-                  </li>
-                </ul>
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm lg:text-base">
-                  Elegir Plan
-                </Button>
-              </CardContent>
-            </Card>
 
-            {/* Plan Business */}
-            <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 ring-2 ring-orange-500">
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 sm:px-4 py-1 rounded-b-lg text-xs sm:text-sm font-semibold">
+          {/* Tipos de Antena */}
+          <div className="mb-8 sm:mb-12">
+            <h3 className="text-xl sm:text-2xl font-bold text-center mb-6 text-gray-900">Tipos de Antena</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-6 max-w-4xl mx-auto">
+              <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg h-full">
+                <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-4">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Satellite className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  </div>
+                  <CardTitle className="text-sm sm:text-lg font-bold mb-2">Starlink Mini</CardTitle>
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600 mb-2">$190.000</div>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-4 pt-0">
+                  <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
+                    <li className="flex items-start">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Tamaño:</strong> Compacto y ligero
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Router:</strong> Wi-Fi integrado
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Cobertura:</strong> 112 m²
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Dispositivos:</strong> 128 conexiones
+                      </span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg h-full">
+                <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-4">
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Satellite className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  </div>
+                  <CardTitle className="text-sm sm:text-lg font-bold mb-2">Starlink Estándar</CardTitle>
+                  <div className="text-xl sm:text-2xl font-bold text-green-600 mb-2">$500.000</div>
+                </CardHeader>
+                <CardContent className="p-3 sm:p-4 pt-0">
+                  <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
+                    <li className="flex items-start">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Tamaño:</strong> Más grande, fijo/portátil
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Router:</strong> Wi-Fi Gen 3 separado
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Cobertura:</strong> 297 m²
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>
+                        <strong>Dispositivos:</strong> Más conexiones
+                      </span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Planes Principales */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-6 max-w-4xl mx-auto mb-8">
+            {/* Plan Residencial */}
+            <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 ring-2 ring-orange-500 h-full">
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 sm:px-3 py-1 rounded-b-lg text-xs font-semibold">
                 Más Popular
               </div>
-              <div className="bg-gradient-to-br from-orange-500 to-red-500 text-white p-3 sm:p-6 mt-4 sm:mt-6">
-                <div className="flex items-center justify-between mb-2 sm:mb-4">
-                  <h3 className="text-lg sm:text-2xl font-bold">Business</h3>
-                  <div className="bg-white/20 rounded-full p-1 sm:p-2">
-                    <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6" />
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 sm:p-4 mt-4 sm:mt-6">
+                <div className="text-center mb-3 sm:mb-4">
+                  <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Residencial</h3>
+                  <div className="flex bg-white/20 rounded-lg p-1">
+                    <button
+                      className={`flex-1 py-1 sm:py-2 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                        residentialPlan === "lite" ? "bg-white/30 text-white" : "text-white/70 hover:bg-white/20"
+                      }`}
+                      onClick={() => setResidentialPlan("lite")}
+                    >
+                      Lite
+                    </button>
+                    <button
+                      className={`flex-1 py-1 sm:py-2 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-all ${
+                        residentialPlan === "comun" ? "bg-white/30 text-white" : "text-white/70 hover:bg-white/20"
+                      }`}
+                      onClick={() => setResidentialPlan("comun")}
+                    >
+                      Común
+                    </button>
                   </div>
                 </div>
-                <div className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">$199</div>
-                <p className="text-orange-100 text-sm sm:text-base">por mes</p>
+                <div className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">
+                    {residentialData[residentialPlan].price}
+                  </div>
+                  <p className="text-blue-100 text-xs sm:text-sm">por mes</p>
+                </div>
               </div>
-              <CardContent className="p-3 sm:p-6">
-                <ul className="space-y-2 sm:space-y-4 mb-4 sm:mb-6">
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Hasta 200 Mbps de descarga</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Hasta 20 Mbps de carga</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Latencia 20-30ms</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Datos ilimitados</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Soporte prioritario</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">IP estática disponible</span>
-                  </li>
+              <CardContent className="p-3 sm:p-4">
+                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
+                  {residentialData[residentialPlan].specs.map((spec, index) => (
+                    <li key={index} className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>{spec}</span>
+                    </li>
+                  ))}
                 </ul>
-                <Button className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-xs sm:text-sm lg:text-base">
-                  Elegir Plan
-                </Button>
               </CardContent>
             </Card>
 
-            {/* Plan Enterprise */}
-            <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 col-span-2 lg:col-span-1">
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-3 sm:p-6">
-                <div className="flex items-center justify-between mb-2 sm:mb-4">
-                  <h3 className="text-lg sm:text-2xl font-bold">Enterprise</h3>
-                  <div className="bg-white/20 rounded-full p-1 sm:p-2">
-                    <Award className="w-4 h-4 sm:w-6 sm:h-6" />
+            {/* Plan Itinerante */}
+            <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 h-full">
+              <div className="bg-gradient-to-br from-orange-500 to-red-500 text-white p-3 sm:p-4">
+                <div className="text-center mb-3 sm:mb-4">
+                  <h3 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">Itinerante</h3>
+                  <div className="flex bg-white/20 rounded-lg p-1">
+                    <button
+                      className={`flex-1 py-1 px-1 sm:px-2 rounded-md text-xs font-medium transition-all ${
+                        itinerantePlan === "10gb" ? "bg-white/30 text-white" : "text-white/70 hover:bg-white/20"
+                      }`}
+                      onClick={() => setItinerantePlan("10gb")}
+                    >
+                      10GB
+                    </button>
+                    <button
+                      className={`flex-1 py-1 px-1 sm:px-2 rounded-md text-xs font-medium transition-all ${
+                        itinerantePlan === "50gb" ? "bg-white/30 text-white" : "text-white/70 hover:bg-white/20"
+                      }`}
+                      onClick={() => setItinerantePlan("50gb")}
+                    >
+                      50GB
+                    </button>
+                    <button
+                      className={`flex-1 py-1 px-1 sm:px-2 rounded-md text-xs font-medium transition-all ${
+                        itinerantePlan === "ilimitado" ? "bg-white/30 text-white" : "text-white/70 hover:bg-white/20"
+                      }`}
+                      onClick={() => setItinerantePlan("ilimitado")}
+                    >
+                      Ilimitado
+                    </button>
                   </div>
                 </div>
-                <div className="text-2xl sm:text-4xl font-bold mb-1 sm:mb-2">$399</div>
-                <p className="text-purple-100 text-sm sm:text-base">por mes</p>
+                <div className="text-center">
+                  <div className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">
+                    {itineranteData[itinerantePlan].price}
+                  </div>
+                  <p className="text-orange-100 text-xs sm:text-sm">por mes</p>
+                </div>
               </div>
-              <CardContent className="p-3 sm:p-6">
-                <ul className="space-y-2 sm:space-y-4 mb-4 sm:mb-6">
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Hasta 500 Mbps de descarga</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Hasta 50 Mbps de carga</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Latencia 15-25ms</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Datos ilimitados</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">SLA 99.9% uptime</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-500 mr-2 sm:mr-3 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm lg:text-base">Soporte técnico dedicado</span>
-                  </li>
+              <CardContent className="p-3 sm:p-4">
+                <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
+                  {itineranteData[itinerantePlan].specs.map((spec, index) => (
+                    <li key={index} className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>{spec}</span>
+                    </li>
+                  ))}
                 </ul>
-                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-xs sm:text-sm lg:text-base">
-                  Contactar Ventas
-                </Button>
               </CardContent>
             </Card>
           </div>
 
-          <div className="text-center mt-8 sm:mt-12">
+          <div className="text-center mb-8 sm:mb-12">
             <Button
               variant="outline"
               size="sm"
               className="border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white bg-transparent text-xs sm:text-sm lg:text-base"
-              onClick={() => setShowCalculator(!showCalculator)}
+              onClick={() => setShowAllPlans(!showAllPlans)}
             >
-              <Calculator className="mr-2 w-4 h-4 sm:w-5 sm:h-5" />
-              Calculadora de Costos
+              {showAllPlans ? "Ocultar planes" : "Ver todos los planes"}
             </Button>
           </div>
 
-          {showCalculator && (
-            <Card className="mt-6 sm:mt-8 max-w-2xl mx-auto">
-              <CardHeader className="p-3 sm:p-6">
-                <CardTitle className="text-center text-sm sm:text-base lg:text-lg">
-                  Calculadora de Costos Starlink
-                </CardTitle>
-                <CardDescription className="text-center text-xs sm:text-sm">
-                  Estima el costo total de tu instalación Starlink
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-3 sm:p-6">
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-2">Plan Seleccionado</label>
-                      <Select>
-                        <SelectTrigger className="text-xs sm:text-sm">
-                          <SelectValue placeholder="Selecciona un plan" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="residential">Residencial - $99/mes</SelectItem>
-                          <SelectItem value="business">Business - $199/mes</SelectItem>
-                          <SelectItem value="enterprise">Enterprise - $399/mes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="block text-xs sm:text-sm font-medium mb-2">Tipo de Instalación</label>
-                      <Select>
-                        <SelectTrigger className="text-xs sm:text-sm">
-                          <SelectValue placeholder="Tipo de instalación" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="standard">Estándar - $200</SelectItem>
-                          <SelectItem value="complex">Compleja - $400</SelectItem>
-                          <SelectItem value="enterprise">Empresarial - $800</SelectItem>
-                        </SelectContent>
-                      </Select>
+          {/* Todos los planes */}
+          {showAllPlans && (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8 max-w-6xl mx-auto mb-8">
+              {/* Itinerante Global */}
+              <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-2 sm:mb-4">
+                    <h3 className="text-sm sm:text-xl font-bold">Itinerante Global</h3>
+                    <div className="bg-white/20 rounded-full p-1 sm:p-2">
+                      <Award className="w-4 h-4 sm:w-6 sm:h-6" />
                     </div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                    <h4 className="font-semibold mb-2 sm:mb-3 text-sm sm:text-base">Resumen de Costos:</h4>
-                    <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
-                      <div className="flex justify-between">
-                        <span>Kit Starlink:</span>
-                        <span>$599</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Instalación:</span>
-                        <span>$200 - $800</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Plan mensual:</span>
-                        <span>$99 - $399</span>
-                      </div>
-                      <hr className="my-2" />
-                      <div className="flex justify-between font-semibold">
-                        <span>Costo inicial estimado:</span>
-                        <span>$799 - $1,399</span>
-                      </div>
-                    </div>
-                  </div>
+                  <div className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">$412.000</div>
+                  <p className="text-purple-100 text-xs sm:text-sm">por mes</p>
                 </div>
-              </CardContent>
-            </Card>
+                <CardContent className="p-3 sm:p-6">
+                  <ul className="space-y-1 sm:space-y-2 mb-4 sm:mb-6 text-xs sm:text-sm">
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Hasta 280 Mbps descarga</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Hasta 30 Mbps carga</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>25-60ms tierra, &gt;100ms altamar</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Datos ilimitados + bloques GB</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Prioridad Local */}
+              <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <div className="bg-gradient-to-br from-teal-500 to-teal-600 text-white p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-2 sm:mb-4">
+                    <h3 className="text-sm sm:text-xl font-bold">Prioridad Local</h3>
+                    <div className="bg-white/20 rounded-full p-1 sm:p-2">
+                      <Shield className="w-4 h-4 sm:w-6 sm:h-6" />
+                    </div>
+                  </div>
+                  <div className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">$38.000</div>
+                  <p className="text-teal-100 text-xs sm:text-sm">por mes</p>
+                </div>
+                <CardContent className="p-3 sm:p-6">
+                  <ul className="space-y-1 sm:space-y-2 mb-4 sm:mb-6 text-xs sm:text-sm">
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>45-230 Mbps descarga</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>10-25 Mbps carga</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>25-60ms latencia</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Ilimitados + bloques 50/500 GB</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* Prioridad Global */}
+              <Card className="relative overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-300 col-span-2 lg:col-span-1">
+                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-2 sm:mb-4">
+                    <h3 className="text-sm sm:text-xl font-bold">Prioridad Global</h3>
+                    <div className="bg-white/20 rounded-full p-1 sm:p-2">
+                      <Globe className="w-4 h-4 sm:w-6 sm:h-6" />
+                    </div>
+                  </div>
+                  <div className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">$219.000</div>
+                  <p className="text-indigo-100 text-xs sm:text-sm">por mes</p>
+                </div>
+                <CardContent className="p-3 sm:p-6">
+                  <ul className="space-y-1 sm:space-y-2 mb-4 sm:mb-6 text-xs sm:text-sm">
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Hasta 230 Mbps descarga</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Hasta 30 Mbps carga</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>25-60ms latencia</span>
+                    </li>
+                    <li className="flex items-center">
+                      <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-green-500 mr-2 flex-shrink-0" />
+                      <span>Datos ilimitados</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
       </section>
@@ -415,12 +527,12 @@ export default function StarlinkPage() {
               Resolvemos las dudas más comunes sobre Starlink y nuestros servicios
             </p>
           </div>
-          <div className="max-w-4xl mx-auto grid grid-cols-2 gap-3 sm:gap-6 lg:gap-8">
+          <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-6 lg:gap-8">
             <Card className="p-3 sm:p-6 hover:shadow-lg transition-shadow">
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Qué incluye la instalación?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
+              <p className="text-xs sm:text-xs lg:text-sm text-gray-600 sm:text-justify">
                 La instalación incluye: antena Starlink, módem WiFi, cables, soporte de montaje, configuración completa
                 y pruebas de funcionamiento. Todo listo para usar.
               </p>
@@ -430,7 +542,7 @@ export default function StarlinkPage() {
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Cuánto tiempo toma la instalación?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
+              <p className="text-xs sm:text-xs lg:text-sm text-gray-600 sm:text-justify">
                 Una instalación estándar toma entre 2-4 horas. Instalaciones complejas pueden requerir hasta 8 horas,
                 dependiendo de las características del sitio.
               </p>
@@ -440,9 +552,11 @@ export default function StarlinkPage() {
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Funciona en cualquier clima?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
-                Sí, Starlink está diseñado para funcionar en todas las condiciones climáticas, incluyendo lluvia, nieve
-                y viento. La antena tiene calefacción automática.
+              <p className="text-xs sm:text-xs lg:text-sm text-gray-600 sm:text-justify">
+                Sí, Starlink es portátil. Puedes llevarlo a otra ubicación, aunque recomendamos consultar sobre la
+                cobertura en el nuevo sitio antes de mudarlo. El modelo Mini es especialmente diseñado para
+                portabilidad, mientras que el Estándar también puede moverse pero está optimizado para instalaciones
+                fijas.
               </p>
             </Card>
 
@@ -450,29 +564,20 @@ export default function StarlinkPage() {
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Hay límites de datos?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
-                No, todos nuestros planes incluyen datos ilimitados. Puedes usar internet sin preocuparte por límites de
-                descarga o carga.
+              <p className="text-xs sm:text-xs lg:text-sm text-gray-600 sm:text-justify">
+                Depende del plan seleccionado. Los planes Residencial Común e Itinerante Ilimitado no tienen límites de
+                datos. Los planes Lite tienen datos ilimitados pero sin prioridad en horas pico. Los planes de 10GB y
+                50GB tienen límites mensuales con opción de comprar datos adicionales.
               </p>
             </Card>
 
-            <Card className="p-3 sm:p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
-                ¿Qué garantía ofrecen?
-              </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
-                Ofrecemos 2 años de garantía en la instalación y 1 año en equipos. Además, soporte técnico gratuito
-                durante toda la vida útil del servicio.
-              </p>
-            </Card>
-
-            <Card className="p-3 sm:p-6 hover:shadow-lg transition-shadow">
+            <Card className="p-3 sm:p-6 hover:shadow-lg transition-shadow col-span-2">
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Puedo mover el equipo?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
-                Sí, Starlink es portátil. Puedes llevarlo a otra ubicación, aunque recomendamos consultar sobre la
-                cobertura en el nuevo sitio antes de mudarlo.
+              <p className="text-xs sm:text-xs lg:text-sm text-gray-600 sm:text-justify">
+                Sí, Starlink está diseñado para funcionar en todas las condiciones climáticas, incluyendo lluvia, nieve
+                y viento. La antena tiene calefacción automática.
               </p>
             </Card>
           </div>

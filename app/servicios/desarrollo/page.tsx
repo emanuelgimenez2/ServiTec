@@ -83,12 +83,12 @@ export default function DesarrolloPage() {
                 <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Landing Pages</CardTitle>
               </CardHeader>
               <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-30">
                   Páginas de aterrizaje optimizadas para conversión, perfectas para campañas de marketing y captación de
                   leads.
                 </p>
                 <div className="bg-blue-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-blue-700">Desde $299 - Entrega en 5 días</p>
+                  <p className="text-xs sm:text-sm font-semibold text-blue-700">Entrega en 5 días</p>
                 </div>
               </CardContent>
             </Card>
@@ -103,11 +103,11 @@ export default function DesarrolloPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-30">
                   Sitios web profesionales para empresas con diseño moderno, gestión de contenido y optimización SEO.
                 </p>
                 <div className="bg-green-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-green-700">Desde $799 - Entrega en 15 días</p>
+                  <p className="text-xs sm:text-sm font-semibold text-green-700">Entrega en 15 días</p>
                 </div>
               </CardContent>
             </Card>
@@ -120,11 +120,11 @@ export default function DesarrolloPage() {
                 <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">E-commerce</CardTitle>
               </CardHeader>
               <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-30">
                   Tiendas online completas con carrito de compras, pasarelas de pago y gestión de inventario.
                 </p>
                 <div className="bg-purple-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-purple-700">Desde $1,299 - Entrega en 25 días</p>
+                  <p className="text-xs sm:text-sm font-semibold text-purple-700">Entrega en 25 días</p>
                 </div>
               </CardContent>
             </Card>
@@ -137,14 +137,9 @@ export default function DesarrolloPage() {
                 <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Apps Web</CardTitle>
               </CardHeader>
               <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-30">
                   Aplicaciones web personalizadas para gestión empresarial, CRM, dashboards y sistemas internos.
                 </p>
-                <div className="bg-orange-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-orange-700">
-                    Desde $1,999 - Cotización personalizada
-                  </p>
-                </div>
               </CardContent>
             </Card>
 
@@ -158,12 +153,9 @@ export default function DesarrolloPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-30">
                   Soluciones completamente personalizadas según tus necesidades específicas y requerimientos únicos.
                 </p>
-                <div className="bg-teal-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-teal-700">Cotización personalizada</p>
-                </div>
               </CardContent>
             </Card>
 
@@ -175,13 +167,10 @@ export default function DesarrolloPage() {
                 <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Mantenimiento</CardTitle>
               </CardHeader>
               <CardContent className="text-center p-3 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-3">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-30">
                   Actualizaciones, backups, seguridad y soporte técnico continuo para mantener tu sitio siempre
                   actualizado.
                 </p>
-                <div className="bg-indigo-50 rounded-lg p-2 sm:p-3">
-                  <p className="text-xs sm:text-sm font-semibold text-indigo-700">Desde $99/mes</p>
-                </div>
               </CardContent>
             </Card>
           </div>

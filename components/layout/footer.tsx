@@ -5,15 +5,15 @@ import { MapPin, Phone, Mail, Clock, Instagram, Facebook } from "lucide-react"
 export default function Footer() {
   return (
     <footer className="bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 text-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-center md:text-left">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 text-center md:text-left">
           {/* Company Info */}
           <div className="lg:col-span-1 flex flex-col items-center md:items-start">
-            <Link href="/" className="flex items-center space-x-2 mb-6">
+            <Link href="/" className="flex items-center space-x-2 mb-4 md:mb-6">
               <Image src="/logo.png" alt="ServiTec Logo" width={40} height={40} className="w-10 h-10" />
               <span className="text-2xl font-bold">ServiTec</span>
             </Link>
-            <p className="text-white/80 mb-6 leading-relaxed max-w-xs md:max-w-none text-center md:text-left">
+            <p className="text-white/80 mb-4 md:mb-6 leading-relaxed max-w-xs md:max-w-none text-center md:text-left">
               Soluciones tecnológicas a tu alcance. Especialistas en reparación, instalación y desarrollo de sistemas tecnológicos.
             </p>
             <div className="flex space-x-4 justify-center md:justify-start">
@@ -38,8 +38,8 @@ export default function Footer() {
 
           {/* Services */}
           <div>
-            <h3 className="text-lg font-semibold mb-6">Servicios</h3>
-            <ul className="space-y-3">
+            <h3 className="text-lg font-semibold mb-4 md:mb-6">Servicios</h3>
+            <ul className="space-y-2 md:space-y-3">
               <li><Link href="/servicios/reparacion" className="text-white/80 hover:text-orange-400 transition-colors">Reparación de Computadoras</Link></li>
               <li><Link href="/servicios/starlink" className="text-white/80 hover:text-orange-400 transition-colors">Instalación Starlink</Link></li>
               <li><Link href="/servicios/camaras" className="text-white/80 hover:text-orange-400 transition-colors">Cámaras de Seguridad</Link></li>
@@ -50,8 +50,8 @@ export default function Footer() {
 
           {/* Contact Info */}
           <div className="flex flex-col items-center md:items-start">
-            <h3 className="text-lg font-semibold mb-6">Contacto</h3>
-            <div className="space-y-4 text-center md:text-left">
+            <h3 className="text-lg font-semibold mb-4 md:mb-6">Contacto</h3>
+            <div className="space-y-3 md:space-y-4 text-center md:text-left">
               <div className="flex items-start justify-center md:justify-start space-x-3">
                 <MapPin className="w-5 h-5 text-orange-400 mt-1 flex-shrink-0" />
                 <div>
@@ -77,10 +77,10 @@ export default function Footer() {
         </div>
 
         {/* Bottom Section */}
-        <div className="border-t border-white/20 mt-12 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0 text-center md:text-center">
-            <div className="text-sm text-white/70 text-center md:text-right">
-              <p>&copy; 2024 ServiTec. Todos los derechos reservados.</p>
+        <div className="border-t border-white/20 mt-8 md:mt-12 pt-6 md:pt-8">
+          <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 text-center">
+            <div className="text-sm text-white/70 text-center">
+              <p>&copy; <a href="https://linktr.ee/serviteccdelu" target="_blank" rel="noopener noreferrer" className="hover:text-orange-400 transition-colors">ServiTec. Todos los derechos reservados.</a></p>
               <p className="mt-1">Desarrollado con ❤️ en Argentina</p>
             </div>
           </div>
