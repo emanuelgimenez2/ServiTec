@@ -54,29 +54,35 @@ const statusConfig = {
 }
 
 export default function MisTurnosPage() {
-  const [user, setUser] = useState(null)
-  const [appointments, setAppointments] = useState([])
-  const [filteredAppointments, setFilteredAppointments] = useState([])
+  const [user, setUser] = useState<any>(null)
+  const [appointments, setAppointments] = useState<any[]>([])
+  const [filteredAppointments, setFilteredAppointments] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const { toast } = useToast()
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) {
         router.push("/auth")
         return
       }
 
-      const userData = await getUserDocument(user.uid)
-      if (userData) {
-        setUser(userData)
-        await loadAppointments(userData.id)
+      try {
+        const userData = await getUserDocument(firebaseUser.uid)
+        if (userData) {
+          setUser(userData)
+          console.log("Usuario cargado:", userData)
+          await loadAppointments(userData.id)
+        }
+      } catch (error) {
+        console.error("Error loading user:", error)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })
 
     return () => unsubscribe()
@@ -89,8 +95,8 @@ export default function MisTurnosPage() {
     if (searchTerm) {
       filtered = filtered.filter(
         (apt) =>
-          apt.serviceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          apt.name.toLowerCase().includes(searchTerm.toLowerCase()),
+          apt.serviceName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          apt.name?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
@@ -99,31 +105,45 @@ export default function MisTurnosPage() {
     }
 
     // Sort by date (newest first)
-    filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.createdAt || a.date)
+      const dateB = new Date(b.createdAt || b.date)
+      return dateB.getTime() - dateA.getTime()
+    })
 
     setFilteredAppointments(filtered)
   }, [appointments, searchTerm, statusFilter])
 
-  const loadAppointments = async (userId) => {
+  const loadAppointments = async (userId: string) => {
     try {
+      console.log("Cargando turnos para usuario:", userId)
       const userAppointments = await turnosService.getUserAppointments(userId)
-      setAppointments(userAppointments)
+      console.log("Turnos obtenidos:", userAppointments)
+      setAppointments(userAppointments || [])
     } catch (error) {
       console.error("Error loading appointments:", error)
       setAppointments([])
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar los turnos",
+        variant: "destructive",
+      })
     }
   }
 
-  const handleCancelAppointment = async (appointmentId) => {
+  const handleCancelAppointment = async (appointmentId: string) => {
     try {
       await turnosService.cancelAppointment(appointmentId)
-      await loadAppointments(user.id)
+      if (user) {
+        await loadAppointments(user.id)
+      }
 
       toast({
         title: "Turno cancelado",
         description: "Tu turno ha sido cancelado correctamente.",
       })
     } catch (error) {
+      console.error("Error cancelling appointment:", error)
       toast({
         title: "Error",
         description: "Hubo un problema al cancelar tu turno.",
@@ -132,16 +152,21 @@ export default function MisTurnosPage() {
     }
   }
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("es-AR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString("es-AR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    } catch (error) {
+      return dateString
+    }
   }
 
-  const formatPrice = (price) => {
+  const formatPrice = (price: number) => {
+    if (!price || price === 0) return "Consultar"
     return new Intl.NumberFormat("es-AR", {
       style: "currency",
       currency: "ARS",
@@ -149,12 +174,18 @@ export default function MisTurnosPage() {
     }).format(price)
   }
 
-  const canCancelAppointment = (appointment) => {
-    const appointmentDate = new Date(`${appointment.date}T${appointment.time}`)
-    const now = new Date()
-    const hoursDifference = (appointmentDate - now) / (1000 * 60 * 60)
+  const canCancelAppointment = (appointment: any) => {
+    if (!appointment.date || !appointment.time) return false
 
-    return appointment.status === "pending" && hoursDifference > 24
+    try {
+      const appointmentDate = new Date(`${appointment.date}T${appointment.time}`)
+      const now = new Date()
+      const hoursDifference = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60)
+
+      return appointment.status === "pending" && hoursDifference > 24
+    } catch (error) {
+      return false
+    }
   }
 
   const getStatusStats = () => {
@@ -211,82 +242,90 @@ export default function MisTurnosPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-20">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => router.back()} className="text-white hover:bg-white/10">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8 max-w-7xl">
+        {/* Header - Más compacto en móvil */}
+        <div className="mb-6 sm:mb-8">
+          {/* Botón volver y título en móvil */}
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <Button
+              variant="ghost"
+              onClick={() => router.back()}
+              className="text-white hover:bg-white/10 p-2 sm:p-3 h-8 sm:h-10"
+            >
+              <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm">Volver</span>
             </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-white">Mis Turnos</h1>
-              <p className="text-white/70">Gestiona y revisa todos tus turnos reservados</p>
-            </div>
+
+            <Button
+              onClick={() => router.push("/turnos")}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 h-8 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm"
+            >
+              <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Nuevo Turno</span>
+              <span className="sm:hidden">Nuevo</span>
+            </Button>
           </div>
 
-          <Button
-            onClick={() => router.push("/turnos")}
-            className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Turno
-          </Button>
+          {/* Título y descripción */}
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2">Mis Turnos</h1>
+            <p className="text-white/70 text-sm sm:text-base">Gestiona y revisa todos tus turnos reservados</p>
+          </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-white">{stats.total}</div>
-              <div className="text-sm text-white/70">Total</div>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-white">{stats.total}</div>
+              <div className="text-xs sm:text-sm text-white/70">Total</div>
             </CardContent>
           </Card>
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-yellow-400">{stats.pending}</div>
-              <div className="text-sm text-white/70">Pendientes</div>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-yellow-400">{stats.pending}</div>
+              <div className="text-xs sm:text-sm text-white/70">Pendientes</div>
             </CardContent>
           </Card>
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-400">{stats.confirmed}</div>
-              <div className="text-sm text-white/70">Confirmados</div>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-blue-400">{stats.confirmed}</div>
+              <div className="text-xs sm:text-sm text-white/70">Confirmados</div>
             </CardContent>
           </Card>
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-400">{stats.completed}</div>
-              <div className="text-sm text-white/70">Completados</div>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-green-400">{stats.completed}</div>
+              <div className="text-xs sm:text-sm text-white/70">Completados</div>
             </CardContent>
           </Card>
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-400">{stats.cancelled}</div>
-              <div className="text-sm text-white/70">Cancelados</div>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <div className="text-xl sm:text-2xl font-bold text-red-400">{stats.cancelled}</div>
+              <div className="text-xs sm:text-sm text-white/70">Cancelados</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Filters */}
-        <Card className="mb-6 bg-white/10 backdrop-blur-md border-white/20">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
+        <Card className="mb-4 sm:mb-6 bg-white/10 backdrop-blur-md border-white/20">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 w-3 h-3 sm:w-4 sm:h-4" />
                   <Input
                     placeholder="Buscar por servicio o nombre..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                    className="pl-8 sm:pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50 h-9 sm:h-10 text-sm"
                   />
                 </div>
               </div>
-              <div className="w-full md:w-48">
+              <div className="w-full sm:w-48">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                    <Filter className="w-4 h-4 mr-2" />
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white h-9 sm:h-10 text-sm">
+                    <Filter className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                     <SelectValue placeholder="Filtrar por estado" />
                   </SelectTrigger>
                   <SelectContent>
@@ -305,10 +344,10 @@ export default function MisTurnosPage() {
         {/* Appointments List */}
         {filteredAppointments.length === 0 ? (
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardContent className="p-12 text-center">
-              <Calendar className="w-16 h-16 text-white/50 mx-auto mb-4" />
+            <CardContent className="p-8 sm:p-12 text-center">
+              <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-white/50 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-white mb-2">No hay turnos</h3>
-              <p className="text-white/70 mb-6">
+              <p className="text-white/70 mb-6 text-sm sm:text-base">
                 {appointments.length === 0
                   ? "Aún no has reservado ningún turno."
                   : "No se encontraron turnos con los filtros aplicados."}
@@ -322,7 +361,7 @@ export default function MisTurnosPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {filteredAppointments.map((appointment) => {
               const StatusIcon = statusConfig[appointment.status]?.icon || AlertCircle
               return (
@@ -330,55 +369,58 @@ export default function MisTurnosPage() {
                   key={appointment.id}
                   className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/15 transition-all duration-300"
                 >
-                  <CardContent className="p-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center mb-2">
-                          <h3 className="text-lg font-semibold text-white mr-3">{appointment.serviceName}</h3>
+                          <h3 className="text-base sm:text-lg font-semibold text-white mr-3">
+                            {appointment.serviceName}
+                          </h3>
                           <Badge className={statusConfig[appointment.status]?.color}>
                             <StatusIcon className="w-3 h-3 mr-1" />
                             {statusConfig[appointment.status]?.label}
                           </Badge>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-white/70">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-white/70">
                           <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {formatDate(appointment.date)}
+                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                            <span className="truncate">{formatDate(appointment.date)}</span>
                           </div>
                           <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-2" />
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                             {appointment.time}
                           </div>
                           <div className="flex items-center">
-                            <User className="w-4 h-4 mr-2" />
-                            {appointment.name}
+                            <User className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                            <span className="truncate">{appointment.name}</span>
                           </div>
                         </div>
 
-                        {appointment.servicePrice && (
+                        {appointment.servicePrice && appointment.servicePrice > 0 && (
                           <div className="mt-2">
-                            <span className="text-lg font-bold text-green-400">
+                            <span className="text-base sm:text-lg font-bold text-green-400">
                               {formatPrice(appointment.servicePrice)}
                             </span>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex items-center space-x-2 mt-4 md:mt-0">
+                      <div className="flex items-center space-x-2 mt-3 md:mt-0">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => setSelectedAppointment(appointment)}
-                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-8"
                             >
-                              <Eye className="w-4 h-4 mr-1" />
-                              Ver Detalles
+                              <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                              <span className="hidden sm:inline">Ver Detalles</span>
+                              <span className="sm:hidden">Ver</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-2xl bg-gray-900 border-gray-700">
+                          <DialogContent className="max-w-2xl bg-gray-900 border-gray-700 mx-4 sm:mx-0">
                             <DialogHeader>
                               <DialogTitle className="text-white">Detalles del Turno</DialogTitle>
                             </DialogHeader>
@@ -397,12 +439,17 @@ export default function MisTurnosPage() {
                                       <p className="text-white/80">
                                         <strong>Hora:</strong> {selectedAppointment.time}
                                       </p>
-                                      <p className="text-white/80">
-                                        <strong>Duración:</strong> {selectedAppointment.serviceDuration} minutos
-                                      </p>
-                                      <p className="text-white/80">
-                                        <strong>Precio:</strong> {formatPrice(selectedAppointment.servicePrice)}
-                                      </p>
+                                      {selectedAppointment.serviceDuration &&
+                                        selectedAppointment.serviceDuration > 0 && (
+                                          <p className="text-white/80">
+                                            <strong>Duración:</strong> {selectedAppointment.serviceDuration} minutos
+                                          </p>
+                                        )}
+                                      {selectedAppointment.servicePrice && selectedAppointment.servicePrice > 0 && (
+                                        <p className="text-white/80">
+                                          <strong>Precio:</strong> {formatPrice(selectedAppointment.servicePrice)}
+                                        </p>
+                                      )}
                                       <div className="flex items-center">
                                         <strong className="mr-2 text-white/80">Estado:</strong>
                                         <Badge className={statusConfig[selectedAppointment.status]?.color}>
@@ -423,10 +470,12 @@ export default function MisTurnosPage() {
                                         <Phone className="w-4 h-4 mr-2 text-white/50" />
                                         {selectedAppointment.phone}
                                       </div>
-                                      <div className="flex items-center text-white/80">
-                                        <MapPin className="w-4 h-4 mr-2 text-white/50" />
-                                        {selectedAppointment.address || "No especificada"}
-                                      </div>
+                                      {selectedAppointment.address && (
+                                        <div className="flex items-center text-white/80">
+                                          <MapPin className="w-4 h-4 mr-2 text-white/50" />
+                                          {selectedAppointment.address}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 </div>
@@ -442,7 +491,10 @@ export default function MisTurnosPage() {
 
                                 <div className="text-xs text-white/50">
                                   <p>
-                                    Turno creado el {new Date(selectedAppointment.createdAt).toLocaleString("es-AR")}
+                                    Turno creado el{" "}
+                                    {selectedAppointment.createdAt
+                                      ? new Date(selectedAppointment.createdAt).toLocaleString("es-AR")
+                                      : "Fecha no disponible"}
                                   </p>
                                   {selectedAppointment.cancelledAt && (
                                     <p>
@@ -460,10 +512,11 @@ export default function MisTurnosPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleCancelAppointment(appointment.id)}
-                            className="text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-300"
+                            className="text-red-400 border-red-500/30 hover:bg-red-500/10 hover:text-red-300 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-8"
                           >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Cancelar
+                            <XCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                            <span className="hidden sm:inline">Cancelar</span>
+                            <span className="sm:hidden">X</span>
                           </Button>
                         )}
                       </div>

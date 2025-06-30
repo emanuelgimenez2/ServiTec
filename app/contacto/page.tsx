@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
+import { mensajeService } from "@/lib/firebase-services"
+
 import {
   Phone,
   Mail,
@@ -31,7 +33,23 @@ import {
 } from "lucide-react"
 // Cambiar la importación
 import { mensajeService } from "@/lib/firebase-services"
+import { db } from "@/lib/firebase" // Asegúrate de tener bien configurado firebase.ts
+import { collection, addDoc, Timestamp } from "firebase/firestore"
 
+export const mensajeService = {
+  createMessage: async (data) => {
+    try {
+      const docRef = await addDoc(collection(db, "mensajes"), {
+        ...data,
+        creadoEn: Timestamp.now(),
+      })
+      return docRef.id
+    } catch (error) {
+      console.error("Error al guardar mensaje:", error)
+      throw error
+    }
+  },
+}
 export default function ContactoPage() {
   const [formData, setFormData] = useState({
     nombre: "",
@@ -154,75 +172,65 @@ export default function ContactoPage() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Múltiples Formas de Contactarnos</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Elige la forma que más te convenga para ponerte en contacto con nuestro equipo
+              Elige la forma que más te convenga para ponerte en contacto con nosotros
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
             <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
               <CardHeader>
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-8 h-8 text-white" />
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Phone className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <CardTitle className="text-lg font-bold">Teléfono</CardTitle>
+                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Teléfono</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">Llámanos directamente para consultas urgentes</p>
-                <div className="space-y-2">
-                  <p className="font-semibold text-blue-600">+54 11 1234-5678</p>
-                  <p className="text-sm text-gray-500">Lun-Vie: 9:00-18:00</p>
-                  <p className="text-sm text-gray-500">Sáb: 9:00-13:00</p>
+                <div className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
+                  <p className="font-semibold text-blue-600">+54 3442 646670</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
               <CardHeader>
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Mail className="w-8 h-8 text-white" />
                 </div>
-                <CardTitle className="text-lg font-bold">Email</CardTitle>
+                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Email</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">Envíanos un email detallado</p>
-                <div className="space-y-2">
-                  <p className="font-semibold text-green-600">info@servitec.com</p>
-                  <p className="text-sm text-gray-500">Respuesta en 24hs</p>
-                  <p className="text-sm text-gray-500">Lun-Dom: 24/7</p>
+                <div className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
+                  <p className="font-semibold text-green-600">informaticabalbin</p>
+                  <p className="font-semibold text-green-600">@gmail.com</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
               <CardHeader>
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                   <MapPin className="w-8 h-8 text-white" />
                 </div>
-                <CardTitle className="text-lg font-bold">Ubicación</CardTitle>
+                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Ubicación</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">Visítanos en nuestra oficina</p>
-                <div className="space-y-2">
-                  <p className="font-semibold text-purple-600">CABA, Argentina</p>
-                  <p className="text-sm text-gray-500">Servicio a domicilio</p>
-                  <p className="text-sm text-gray-500">CABA y GBA</p>
+                <div className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
+                  <p className="font-semibold text-purple-600">Balbin y Baldoni, Concepcion del Uruguay, Argentina</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
               <CardHeader>
-                <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Clock className="w-8 h-8 text-white" />
                 </div>
-                <CardTitle className="text-lg font-bold">Horarios</CardTitle>
+                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Horarios</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">Nuestros horarios de atención</p>
-                <div className="space-y-2">
+                <div className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
                   <p className="font-semibold text-orange-600">Lun-Vie: 9-18hs</p>
-                  <p className="text-sm text-gray-500">Sáb: 9-13hs</p>
-                  <p className="text-sm text-gray-500">Dom: Emergencias</p>
+                  <p className="font-semibold text-orange-600">Sáb: 9-13hs</p>
                 </div>
               </CardContent>
             </Card>
@@ -240,74 +248,63 @@ export default function ContactoPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg group">
               <CardHeader>
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Laptop className="w-8 h-8 text-white" />
                 </div>
-                <CardTitle className="text-lg font-bold">Reparación PC</CardTitle>
+                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Reparación PC</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-sm mb-4">
+              <CardContent className="text-center p-3 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
                   Diagnóstico y reparación de computadoras, notebooks y equipos informáticos
                 </p>
-                <Button variant="outline" size="sm" className="w-full bg-transparent">
-                  Ver Más
-                </Button>
               </CardContent>
             </Card>
 
             <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg group">
               <CardHeader>
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Globe className="w-8 h-8 text-white" />
-                </div>
-                <CardTitle className="text-lg font-bold">Desarrollo Web</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-sm mb-4">
-                  Sitios web, e-commerce y aplicaciones web personalizadas y modernas
-                </p>
-                <Button variant="outline" size="sm" className="w-full bg-transparent">
-                  Ver Más
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg group">
-              <CardHeader>
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <Camera className="w-8 h-8 text-white" />
-                </div>
-                <CardTitle className="text-lg font-bold">Cámaras Seguridad</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-sm mb-4">
-                  Sistemas de videovigilancia 4K con monitoreo remoto y almacenamiento cloud
-                </p>
-                <Button variant="outline" size="sm" className="w-full bg-transparent">
-                  Ver Más
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg group">
-              <CardHeader>
-                <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <div className="bg-gradient-to-br from-orange-500 to-red-500 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
                   <Satellite className="w-8 h-8 text-white" />
                 </div>
-                <CardTitle className="text-lg font-bold">Internet Starlink</CardTitle>
+                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Internet Starlink</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-sm mb-4">
+              <CardContent className="text-center p-3 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
                   Internet satelital de alta velocidad para zonas rurales y urbanas
                 </p>
-                <Button variant="outline" size="sm" className="w-full bg-transparent">
-                  Ver Más
-                </Button>
               </CardContent>
             </Card>
+
+            <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg group">
+              <CardHeader>
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Camera className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Cámaras Seguridad</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center p-3 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
+                  Sistemas de videovigilancia con monitoreo remoto y almacenamiento cloud
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center hover:shadow-xl transition-all duration-300 border-0 shadow-lg group">
+              <CardHeader>
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <Globe className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-sm sm:text-lg lg:text-xl font-bold text-gray-900">Desarrollo Web</CardTitle>
+              </CardHeader>
+              <CardContent className="text-center p-3 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
+                  Sitios web, e-commerce y aplicaciones web personalizadas y modernas
+                </p>
+              </CardContent>
+            </Card>
+
           </div>
         </div>
       </section>
@@ -339,15 +336,6 @@ export default function ContactoPage() {
                       </div>
                     </div>
                     <div className="flex items-start">
-                      <div className="bg-green-100 rounded-full p-2 mr-4">
-                        <Shield className="w-5 h-5 text-green-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Garantía Total</h4>
-                        <p className="text-gray-600">Todos nuestros servicios incluyen garantía extendida</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
                       <div className="bg-orange-100 rounded-full p-2 mr-4">
                         <Zap className="w-5 h-5 text-orange-600" />
                       </div>
@@ -363,40 +351,6 @@ export default function ContactoPage() {
                       <div>
                         <h4 className="font-semibold text-gray-900">Equipo Especializado</h4>
                         <p className="text-gray-600">Técnicos certificados en todas las áreas</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6">
-                  <h4 className="font-bold text-blue-900 mb-4">Información de Contacto</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Phone className="w-5 h-5 text-blue-600 mr-3" />
-                      <div>
-                        <p className="font-semibold text-blue-800">+54 11 1234-5678</p>
-                        <p className="text-sm text-blue-600">WhatsApp disponible</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Mail className="w-5 h-5 text-blue-600 mr-3" />
-                      <div>
-                        <p className="font-semibold text-blue-800">info@servitec.com</p>
-                        <p className="text-sm text-blue-600">Respuesta garantizada en 24hs</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <MapPin className="w-5 h-5 text-blue-600 mr-3" />
-                      <div>
-                        <p className="font-semibold text-blue-800">CABA, Argentina</p>
-                        <p className="text-sm text-blue-600">Servicio a domicilio en CABA y GBA</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="w-5 h-5 text-blue-600 mr-3" />
-                      <div>
-                        <p className="font-semibold text-blue-800">Lun-Vie: 9:00-18:00</p>
-                        <p className="text-sm text-blue-600">Sáb: 9:00-13:00 | Dom: Emergencias</p>
                       </div>
                     </div>
                   </div>
@@ -612,68 +566,6 @@ export default function ContactoPage() {
                 </CardContent>
               </Card>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Preguntas Frecuentes</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Resolvemos las dudas más comunes sobre nuestros servicios
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-lg mb-3 text-gray-900">¿Ofrecen servicio a domicilio?</h3>
-              <p className="text-gray-600">
-                Sí, brindamos servicio técnico a domicilio en CABA y Gran Buenos Aires. El costo del traslado se incluye
-                en el presupuesto.
-              </p>
-            </Card>
-
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-lg mb-3 text-gray-900">¿Los presupuestos tienen costo?</h3>
-              <p className="text-gray-600">
-                No, todos nuestros presupuestos son completamente gratuitos y sin compromiso. Solo pagas si decides
-                contratar el servicio.
-              </p>
-            </Card>
-
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-lg mb-3 text-gray-900">¿Qué garantía ofrecen?</h3>
-              <p className="text-gray-600">
-                Ofrecemos garantía extendida en todos nuestros servicios: 6 meses en reparaciones, 1 año en
-                instalaciones y 2 años en desarrollo web.
-              </p>
-            </Card>
-
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-lg mb-3 text-gray-900">¿Atienden emergencias?</h3>
-              <p className="text-gray-600">
-                Sí, tenemos servicio de emergencias 24/7 para problemas críticos. Contáctanos por teléfono para atención
-                inmediata.
-              </p>
-            </Card>
-
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-lg mb-3 text-gray-900">¿Trabajan con empresas?</h3>
-              <p className="text-gray-600">
-                Absolutamente. Tenemos planes especiales para empresas con contratos de mantenimiento y soporte técnico
-                continuo.
-              </p>
-            </Card>
-
-            <Card className="p-6 hover:shadow-lg transition-shadow">
-              <h3 className="font-bold text-lg mb-3 text-gray-900">¿Aceptan todos los medios de pago?</h3>
-              <p className="text-gray-600">
-                Sí, aceptamos efectivo, transferencias bancarias, tarjetas de débito/crédito y todos los medios de pago
-                digitales.
-              </p>
-            </Card>
           </div>
         </div>
       </section>

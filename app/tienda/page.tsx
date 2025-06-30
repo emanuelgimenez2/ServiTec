@@ -14,7 +14,7 @@ import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import Link from "next/link"
 
-export default function TiendaPage() {
+export default function TiendaPageFixed() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -30,9 +30,10 @@ export default function TiendaPage() {
   const { toast } = useToast()
 
   useEffect(() => {
+    // Cargar productos inmediatamente, sin esperar autenticación
     loadProducts()
 
-    // Escuchar cambios de autenticación
+    // Escuchar cambios de autenticación para funciones del carrito
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser)
       if (currentUser) {
@@ -54,12 +55,9 @@ export default function TiendaPage() {
       setLoading(true)
       setError("")
       console.log("Cargando productos desde Firebase...")
-
       const productsData = await productosService.getActiveProducts()
       console.log("Productos cargados:", productsData)
-
       setProducts(productsData)
-
       if (productsData.length === 0) {
         setError("No hay productos disponibles en este momento.")
       }
@@ -151,7 +149,7 @@ export default function TiendaPage() {
   }
 
   const addToCart = async (product: Product) => {
-    // Verificar si el usuario está autenticado
+    // Verificar si el usuario está autenticado SOLO para agregar al carrito
     if (!user) {
       toast({
         title: "Inicia sesión requerido",
@@ -164,10 +162,8 @@ export default function TiendaPage() {
     try {
       console.log("🛒 Agregando producto al carrito:", product.name)
       await carritoService.addToCart(user.uid, product, 1)
-
       // Actualizar contador del carrito
       await loadCartCount(user.uid)
-
       toast({
         title: "Producto agregado",
         description: `${product.name} ha sido agregado al carrito`,
@@ -235,16 +231,19 @@ export default function TiendaPage() {
               <Button onClick={loadProducts} className="bg-blue-600 hover:bg-blue-700">
                 Actualizar Productos
               </Button>
-              <div className="flex items-center space-x-2 text-white/70">
-                <ShoppingCart className="w-5 h-5" />
-                <span>{cartItemsCount} productos en carrito</span>
-              </div>
-              {!user && (
-                <Link href="/auth">
-                  <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
-                    Iniciar Sesión
-                  </Button>
-                </Link>
+              {user ? (
+                <div className="flex items-center space-x-2 text-white/70">
+                  <ShoppingCart className="w-5 h-5" />
+                  <span>{cartItemsCount} productos en carrito</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2 text-white/70">
+                  <Link href="/auth">
+                    <Button variant="outline" className="text-white border-white/30 hover:bg-white/10 bg-transparent">
+                      Iniciar Sesión
+                    </Button>
+                  </Link>
+                </div>
               )}
             </div>
           </div>
@@ -454,7 +453,7 @@ export default function TiendaPage() {
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50"
                     >
                       <ShoppingCart className="w-4 h-4 mr-2" />
-                      {product.stock > 0 ? (user ? "Agregar al carrito" : "Inicia sesión para comprar") : "Sin stock"}
+                      {product.stock > 0 ? "Agregar al carrito" : "Sin stock"}
                     </Button>
                   </div>
                 </CardContent>
@@ -542,11 +541,7 @@ export default function TiendaPage() {
                       className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
                     >
                       <ShoppingCart className="w-4 h-4 mr-2" />
-                      {selectedProduct.stock > 0
-                        ? user
-                          ? "Agregar al carrito"
-                          : "Inicia sesión para comprar"
-                        : "Sin stock"}
+                      {selectedProduct.stock > 0 ? "Agregar al carrito" : "Sin stock"}
                     </Button>
                   </div>
                 </div>

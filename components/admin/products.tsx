@@ -1,8 +1,7 @@
 "use client"
-
+import { useState, useEffect, useRef } from "react"
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -22,7 +21,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Package, Plus, Edit, Trash2, AlertTriangle, CheckCircle, Upload, X, Eye, ImageIcon } from "lucide-react"
 import { productosService, type Product } from "@/lib/firebase-services"
 
-export default function AdminProducts() {
+export default function AdminProductsFixed() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -35,8 +34,11 @@ export default function AdminProducts() {
   const [productImages, setProductImages] = useState<string[]>([])
   const [specifications, setSpecifications] = useState<{ key: string; value: string }[]>([{ key: "", value: "" }])
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [editSpecifications, setEditSpecifications] = useState<{ key: string; value: string }[]>([])
+  const [editImages, setEditImages] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const editFileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
 
@@ -97,7 +99,65 @@ export default function AdminProducts() {
     setFilteredProducts(filtered)
   }
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  // FUNCIÓN PARA CONVERTIR IMAGEN A BASE64
+  const convertImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const result = reader.result as string
+        resolve(result)
+      }
+      reader.onerror = () => {
+        reject(new Error("Error al leer el archivo"))
+      }
+      reader.readAsDataURL(file)
+    })
+  }
+
+  // FUNCIÓN PARA REDIMENSIONAR IMAGEN
+  const resizeImage = (file: File, maxWidth = 800, maxHeight = 600, quality = 0.8): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      const img = new Image()
+
+      img.onload = () => {
+        // Calcular nuevas dimensiones manteniendo proporción
+        let { width, height } = img
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height
+            height = maxHeight
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        // Dibujar imagen redimensionada
+        ctx?.drawImage(img, 0, 0, width, height)
+
+        // Convertir a base64 con compresión
+        const base64 = canvas.toDataURL("image/jpeg", quality)
+        resolve(base64)
+      }
+
+      img.onerror = () => {
+        reject(new Error("Error al procesar la imagen"))
+      }
+
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  // FUNCIÓN PARA MANEJAR SUBIDA DE ARCHIVOS
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
     const file = event.target.files?.[0]
     if (!file) return
 
@@ -111,11 +171,11 @@ export default function AdminProducts() {
       return
     }
 
-    // Validar tamaño (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validar tamaño (máximo 2MB para el archivo original)
+    if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "Error",
-        description: "La imagen debe ser menor a 5MB",
+        description: "La imagen debe ser menor a 2MB",
         variant: "destructive",
       })
       return
@@ -123,82 +183,148 @@ export default function AdminProducts() {
 
     try {
       setUploadingImage(true)
+      console.log("📸 Procesando imagen:", file.name, "Tamaño:", (file.size / 1024).toFixed(2), "KB")
 
-      // Crear URL temporal para preview inmediato
-      const tempUrl = URL.createObjectURL(file)
-      setProductImages([...productImages, tempUrl])
+      // Redimensionar y comprimir imagen
+      const base64Image = await resizeImage(file, 800, 600, 0.8)
 
-      // En un entorno real, aquí subirías el archivo a Firebase Storage
-      // Simulamos el proceso de subida
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Verificar tamaño del base64 (debe ser menor a 500KB para Firestore)
+      const base64Size = (base64Image.length * 3) / 4 / 1024 // Tamaño aproximado en KB
+      console.log("📊 Tamaño base64:", base64Size.toFixed(2), "KB")
 
-      // En producción, reemplazarías la URL temporal con la URL real de Firebase Storage
-      // const storageRef = ref(storage, `products/${Date.now()}_${file.name}`)
-      // const snapshot = await uploadBytes(storageRef, file)
-      // const downloadURL = await getDownloadURL(snapshot.ref)
+      if (base64Size > 500) {
+        // Si es muy grande, comprimir más
+        const compressedBase64 = await resizeImage(file, 600, 400, 0.6)
+        const compressedSize = (compressedBase64.length * 3) / 4 / 1024
 
-      // Por ahora, mantenemos la URL temporal
+        if (compressedSize > 500) {
+          toast({
+            title: "Error",
+            description: "La imagen es demasiado grande incluso después de la compresión. Usa una imagen más pequeña.",
+            variant: "destructive",
+          })
+          return
+        }
+
+        console.log("🗜️ Imagen comprimida a:", compressedSize.toFixed(2), "KB")
+
+        // Agregar imagen comprimida
+        if (isEdit) {
+          setEditImages([...editImages, compressedBase64])
+        } else {
+          setProductImages([...productImages, compressedBase64])
+        }
+      } else {
+        // Agregar imagen normal
+        if (isEdit) {
+          setEditImages([...editImages, base64Image])
+        } else {
+          setProductImages([...productImages, base64Image])
+        }
+      }
+
       toast({
-        title: "Imagen subida",
-        description: `Archivo "${file.name}" subido correctamente`,
+        title: "Imagen procesada",
+        description: `Archivo "${file.name}" convertido y listo para guardar`,
       })
     } catch (error) {
-      console.error("Error uploading image:", error)
+      console.error("❌ Error processing image:", error)
       toast({
         title: "Error",
-        description: "No se pudo subir la imagen",
+        description: "No se pudo procesar la imagen",
         variant: "destructive",
       })
-      // Remover la imagen temporal si falló
-      setProductImages(productImages.filter((img) => img !== URL.createObjectURL(file)))
     } finally {
       setUploadingImage(false)
+      // Limpiar el input
+      if (event.target) {
+        event.target.value = ""
+      }
     }
   }
 
-  const addImageUrl = () => {
-    setProductImages([...productImages, ""])
-  }
-
-  const updateImageUrl = (index: number, url: string) => {
-    const newImages = [...productImages]
-    newImages[index] = url
-    setProductImages(newImages)
-  }
-
-  const removeImageUrl = (index: number) => {
-    const imageToRemove = productImages[index]
-    // Si es una URL temporal (blob), liberamos la memoria
-    if (imageToRemove.startsWith("blob:")) {
-      URL.revokeObjectURL(imageToRemove)
+  const addImageUrl = (isEdit = false) => {
+    if (isEdit) {
+      setEditImages([...editImages, ""])
+    } else {
+      setProductImages([...productImages, ""])
     }
-    setProductImages(productImages.filter((_, i) => i !== index))
   }
 
-  const addSpecification = () => {
-    setSpecifications([...specifications, { key: "", value: "" }])
+  const updateImageUrl = (index: number, url: string, isEdit = false) => {
+    if (isEdit) {
+      const newImages = [...editImages]
+      newImages[index] = url
+      setEditImages(newImages)
+    } else {
+      const newImages = [...productImages]
+      newImages[index] = url
+      setProductImages(newImages)
+    }
   }
 
-  const updateSpecification = (index: number, field: "key" | "value", value: string) => {
-    const newSpecs = [...specifications]
-    newSpecs[index][field] = value
-    setSpecifications(newSpecs)
+  const removeImageUrl = (index: number, isEdit = false) => {
+    if (isEdit) {
+      setEditImages(editImages.filter((_, i) => i !== index))
+    } else {
+      setProductImages(productImages.filter((_, i) => i !== index))
+    }
   }
 
-  const removeSpecification = (index: number) => {
-    setSpecifications(specifications.filter((_, i) => i !== index))
+  const addSpecification = (isEdit = false) => {
+    if (isEdit) {
+      setEditSpecifications([...editSpecifications, { key: "", value: "" }])
+    } else {
+      setSpecifications([...specifications, { key: "", value: "" }])
+    }
+  }
+
+  const updateSpecification = (index: number, field: "key" | "value", value: string, isEdit = false) => {
+    if (isEdit) {
+      const newSpecs = [...editSpecifications]
+      newSpecs[index][field] = value
+      setEditSpecifications(newSpecs)
+    } else {
+      const newSpecs = [...specifications]
+      newSpecs[index][field] = value
+      setSpecifications(newSpecs)
+    }
+  }
+
+  const removeSpecification = (index: number, isEdit = false) => {
+    if (isEdit) {
+      setEditSpecifications(editSpecifications.filter((_, i) => i !== index))
+    } else {
+      setSpecifications(specifications.filter((_, i) => i !== index))
+    }
   }
 
   const resetForm = () => {
-    // Limpiar URLs temporales
-    productImages.forEach((img) => {
-      if (img.startsWith("blob:")) {
-        URL.revokeObjectURL(img)
-      }
-    })
     setNewProduct({})
     setProductImages([])
     setSpecifications([{ key: "", value: "" }])
+  }
+
+  const resetEditForm = () => {
+    setEditingProduct(null)
+    setEditImages([])
+    setEditSpecifications([])
+  }
+
+  const prepareEditData = (product: Product) => {
+    setEditingProduct(product)
+    // Preparar imágenes para edición
+    setEditImages(product.images || [product.image || ""])
+    // Preparar especificaciones para edición
+    if (product.specifications) {
+      const specs = Object.entries(product.specifications).map(([key, value]) => ({
+        key,
+        value: String(value),
+      }))
+      setEditSpecifications(specs.length > 0 ? specs : [{ key: "", value: "" }])
+    } else {
+      setEditSpecifications([{ key: "", value: "" }])
+    }
   }
 
   const addProduct = async () => {
@@ -248,7 +374,7 @@ export default function AdminProducts() {
         }
       })
 
-      // Filtrar imágenes válidas
+      // Filtrar imágenes válidas (ahora son base64 o URLs)
       const validImages = productImages.filter((img) => img.trim())
       const mainImage = validImages[0] || "/placeholder.svg?height=300&width=300"
 
@@ -273,7 +399,12 @@ export default function AdminProducts() {
         },
       }
 
-      console.log("📦 Datos preparados para Firebase:", productData)
+      console.log("📦 Datos preparados para Firebase (imágenes en base64):", {
+        ...productData,
+        images: productData.images.map((img) =>
+          img.startsWith("data:") ? `[BASE64 IMAGE - ${(img.length / 1024).toFixed(2)}KB]` : img,
+        ),
+      })
 
       const productId = await productosService.createProduct(productData)
       console.log("🎉 ¡PRODUCTO CREADO EXITOSAMENTE! ID:", productId)
@@ -306,10 +437,34 @@ export default function AdminProducts() {
 
     try {
       console.log("🔄 Actualizando producto:", editingProduct.id)
-      await productosService.updateProduct(editingProduct.id!, editingProduct)
-      await loadProducts()
 
-      setEditingProduct(null)
+      // Procesar especificaciones editadas
+      const processedSpecs = {}
+      editSpecifications.forEach((spec) => {
+        if (spec.key.trim() && spec.value.trim()) {
+          processedSpecs[spec.key.trim()] = spec.value.trim()
+        }
+      })
+
+      // Filtrar imágenes válidas
+      const validImages = editImages.filter((img) => img.trim())
+      const mainImage = validImages[0] || editingProduct.image || "/placeholder.svg?height=300&width=300"
+
+      const updatedProduct = {
+        ...editingProduct,
+        image: mainImage,
+        images: validImages.length > 0 ? validImages : [mainImage],
+        specifications: {
+          Marca: editingProduct.brand || "Sin especificar",
+          Descripción: editingProduct.description || "",
+          ...processedSpecs,
+        },
+      }
+
+      await productosService.updateProduct(editingProduct.id!, updatedProduct)
+      await loadProducts()
+      resetEditForm()
+
       toast({
         title: "Producto actualizado",
         description: "El producto ha sido actualizado exitosamente",
@@ -329,7 +484,6 @@ export default function AdminProducts() {
       console.log("🗑️ Eliminando producto:", productId)
       await productosService.deleteProduct(productId)
       await loadProducts()
-
       toast({
         title: "Producto eliminado",
         description: "El producto ha sido eliminado exitosamente",
@@ -348,11 +502,9 @@ export default function AdminProducts() {
     try {
       const product = products.find((p) => p.id === productId)
       const newStatus = !product?.isActive
-
       console.log("🔄 Cambiando estado del producto:", productId, "a", newStatus)
       await productosService.toggleProductStatus(productId, newStatus)
       await loadProducts()
-
       toast({
         title: "Estado actualizado",
         description: `Producto ${newStatus ? "activado" : "desactivado"}`,
@@ -368,7 +520,6 @@ export default function AdminProducts() {
   }
 
   const categories = [...new Set(products.map((p) => p.category))]
-
   const stats = {
     total: products.length,
     active: products.filter((p) => p.isActive).length,
@@ -394,6 +545,7 @@ export default function AdminProducts() {
           <h2 className="text-3xl font-bold tracking-tight text-white">Productos</h2>
           <p className="text-white/70">Gestión del inventario de productos</p>
         </div>
+
         <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
@@ -508,36 +660,46 @@ export default function AdminProducts() {
                       disabled={uploadingImage}
                     >
                       <Upload className="h-4 w-4 mr-2" />
-                      {uploadingImage ? "Subiendo..." : "Subir Archivo"}
+                      {uploadingImage ? "Procesando..." : "Subir Imagen"}
                     </Button>
-                    <Button type="button" onClick={addImageUrl} size="sm" variant="outline">
+                    <Button type="button" onClick={() => addImageUrl(false)} size="sm" variant="outline">
                       <Plus className="h-4 w-4 mr-2" />
                       Agregar URL
                     </Button>
                   </div>
                 </div>
 
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, false)}
+                  className="hidden"
+                />
 
                 {productImages.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {productImages.map((image, index) => (
                       <div key={index} className="space-y-2">
-                        <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
                           {image ? (
                             <img
-                              src={image || "/placeholder.svg"}
+                              src={image.startsWith("data:") ? image : image || "/placeholder.svg"}
                               alt={`Producto ${index + 1}`}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+                              }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <ImageIcon className="h-8 w-8 text-gray-400" />
+                              <span className="ml-2 text-sm text-gray-500">Vista previa</span>
                             </div>
                           )}
                           <Button
                             type="button"
-                            onClick={() => removeImageUrl(index)}
+                            onClick={() => removeImageUrl(index, false)}
                             size="sm"
                             variant="destructive"
                             className="absolute top-2 right-2 h-6 w-6 p-0"
@@ -545,12 +707,19 @@ export default function AdminProducts() {
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
-                        <Input
-                          placeholder="URL de la imagen (opcional)"
-                          value={image}
-                          onChange={(e) => updateImageUrl(index, e.target.value)}
-                          className="text-xs"
-                        />
+                        {!image.startsWith("data:") && (
+                          <Input
+                            placeholder="https://ejemplo.com/imagen.jpg"
+                            value={image}
+                            onChange={(e) => updateImageUrl(index, e.target.value, false)}
+                            className="text-sm"
+                          />
+                        )}
+                        {image.startsWith("data:") && (
+                          <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
+                            ✅ Imagen procesada y lista para guardar ({((image.length * 3) / 4 / 1024).toFixed(2)} KB)
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -559,9 +728,23 @@ export default function AdminProducts() {
                 {productImages.length === 0 && (
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                     <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-sm text-muted-foreground">
-                      Sube archivos de imagen o agrega URLs. La primera imagen será la principal.
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Sube archivos de imagen (se convertirán a base64) o agrega URLs. La primera imagen será la
+                      principal.
                     </p>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Las imágenes se redimensionan automáticamente y se comprimen para optimizar el almacenamiento.
+                    </p>
+                    <div className="flex gap-2 justify-center">
+                      <Button type="button" onClick={() => fileInputRef.current?.click()} variant="outline">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Subir Imagen
+                      </Button>
+                      <Button type="button" onClick={() => addImageUrl(false)} variant="outline">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Agregar URL
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -570,7 +753,7 @@ export default function AdminProducts() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label>Especificaciones Técnicas</Label>
-                  <Button type="button" onClick={addSpecification} size="sm" variant="outline">
+                  <Button type="button" onClick={() => addSpecification(false)} size="sm" variant="outline">
                     <Plus className="h-4 w-4 mr-2" />
                     Agregar Especificación
                   </Button>
@@ -580,15 +763,20 @@ export default function AdminProducts() {
                     <Input
                       placeholder="Característica (ej: Procesador)"
                       value={spec.key}
-                      onChange={(e) => updateSpecification(index, "key", e.target.value)}
+                      onChange={(e) => updateSpecification(index, "key", e.target.value, false)}
                     />
                     <div className="flex gap-2">
                       <Input
                         placeholder="Valor (ej: Intel Core i7)"
                         value={spec.value}
-                        onChange={(e) => updateSpecification(index, "value", e.target.value)}
+                        onChange={(e) => updateSpecification(index, "value", e.target.value, false)}
                       />
-                      <Button type="button" onClick={() => removeSpecification(index)} size="sm" variant="outline">
+                      <Button
+                        type="button"
+                        onClick={() => removeSpecification(index, false)}
+                        size="sm"
+                        variant="outline"
+                      >
                         <X className="h-4 w-4" />
                       </Button>
                     </div>
@@ -634,7 +822,6 @@ export default function AdminProducts() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
@@ -646,7 +833,6 @@ export default function AdminProducts() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
@@ -658,7 +844,6 @@ export default function AdminProducts() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
@@ -670,7 +855,6 @@ export default function AdminProducts() {
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
@@ -703,7 +887,6 @@ export default function AdminProducts() {
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
               />
             </div>
-
             <div className="space-y-2">
               <Label className="text-white/90">Categoría</Label>
               <Select value={filterCategory} onValueChange={setFilterCategory}>
@@ -720,7 +903,6 @@ export default function AdminProducts() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label className="text-white/90">Estado</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -762,12 +944,11 @@ export default function AdminProducts() {
                     <div className="space-y-2">
                       <div className="aspect-square relative overflow-hidden rounded-lg bg-gray-100">
                         <img
-                          src={product.image || "/placeholder.svg"}
+                          src={product.image?.startsWith("data:") ? product.image : product.image || "/placeholder.svg"}
                           alt={product.name}
                           className="object-cover w-full h-full"
                         />
                       </div>
-
                       <div className="space-y-2">
                         <div className="flex items-start justify-between">
                           <h3 className="font-semibold text-xs line-clamp-2 text-white">{product.name}</h3>
@@ -783,16 +964,13 @@ export default function AdminProducts() {
                             )}
                           </div>
                         </div>
-
                         <p className="text-xs text-white/70 line-clamp-1">{product.description}</p>
-
                         <div className="flex items-center justify-between">
                           <Badge variant="outline" className="text-white/80 border-white/30 text-xs">
                             {product.category}
                           </Badge>
                           <span className="text-xs font-bold text-green-400">${product.price.toLocaleString()}</span>
                         </div>
-
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-white/70">Stock: {product.stock}</span>
                           <span className="text-white/70">
@@ -800,7 +978,6 @@ export default function AdminProducts() {
                           </span>
                         </div>
                       </div>
-
                       <div className="flex gap-1">
                         <Dialog>
                           <DialogTrigger asChild>
@@ -822,7 +999,11 @@ export default function AdminProducts() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
                                     <img
-                                      src={selectedProduct.image || "/placeholder.svg"}
+                                      src={
+                                        selectedProduct.image?.startsWith("data:")
+                                          ? selectedProduct.image
+                                          : selectedProduct.image || "/placeholder.svg"
+                                      }
                                       alt={selectedProduct.name}
                                       className="w-full h-64 object-cover rounded-lg"
                                     />
@@ -867,19 +1048,18 @@ export default function AdminProducts() {
                             )}
                           </DialogContent>
                         </Dialog>
-
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               variant="outline"
                               size="sm"
                               className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1"
-                              onClick={() => setEditingProduct(product)}
+                              onClick={() => prepareEditData(product)}
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle>Editar Producto</DialogTitle>
                               <DialogDescription>Modifica la información del producto</DialogDescription>
@@ -916,7 +1096,13 @@ export default function AdminProducts() {
                                     </Select>
                                   </div>
                                 </div>
-
+                                <div className="space-y-2">
+                                  <Label>Marca</Label>
+                                  <Input
+                                    value={editingProduct.brand || ""}
+                                    onChange={(e) => setEditingProduct({ ...editingProduct, brand: e.target.value })}
+                                  />
+                                </div>
                                 <div className="space-y-2">
                                   <Label>Descripción</Label>
                                   <Textarea
@@ -926,8 +1112,7 @@ export default function AdminProducts() {
                                     }
                                   />
                                 </div>
-
-                                <div className="grid gap-4 md:grid-cols-2">
+                                <div className="grid gap-4 md:grid-cols-3">
                                   <div className="space-y-2">
                                     <Label>Precio</Label>
                                     <Input
@@ -937,6 +1122,19 @@ export default function AdminProducts() {
                                         setEditingProduct({
                                           ...editingProduct,
                                           price: Number.parseFloat(e.target.value) || 0,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Precio Original</Label>
+                                    <Input
+                                      type="number"
+                                      value={editingProduct.originalPrice || ""}
+                                      onChange={(e) =>
+                                        setEditingProduct({
+                                          ...editingProduct,
+                                          originalPrice: Number.parseFloat(e.target.value) || 0,
                                         })
                                       }
                                     />
@@ -956,16 +1154,131 @@ export default function AdminProducts() {
                                   </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                  <Label>URL de Imagen</Label>
-                                  <Input
-                                    value={editingProduct.image}
-                                    onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
+                                {/* Imágenes para edición */}
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label>Imágenes del Producto</Label>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        type="button"
+                                        onClick={() => editFileInputRef.current?.click()}
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={uploadingImage}
+                                      >
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        {uploadingImage ? "Procesando..." : "Subir Imagen"}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        onClick={() => addImageUrl(true)}
+                                        size="sm"
+                                        variant="outline"
+                                      >
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Agregar URL
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  <input
+                                    ref={editFileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleFileUpload(e, true)}
+                                    className="hidden"
                                   />
+
+                                  {editImages.length > 0 && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {editImages.map((image, index) => (
+                                        <div key={index} className="space-y-2">
+                                          <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                                            {image ? (
+                                              <img
+                                                src={image.startsWith("data:") ? image : image || "/placeholder.svg"}
+                                                alt={`Producto ${index + 1}`}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                  e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+                                                }}
+                                              />
+                                            ) : (
+                                              <div className="w-full h-full flex items-center justify-center">
+                                                <ImageIcon className="h-8 w-8 text-gray-400" />
+                                              </div>
+                                            )}
+                                            <Button
+                                              type="button"
+                                              onClick={() => removeImageUrl(index, true)}
+                                              size="sm"
+                                              variant="destructive"
+                                              className="absolute top-2 right-2 h-6 w-6 p-0"
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </Button>
+                                          </div>
+                                          {!image.startsWith("data:") && (
+                                            <Input
+                                              placeholder="https://ejemplo.com/imagen.jpg"
+                                              value={image}
+                                              onChange={(e) => updateImageUrl(index, e.target.value, true)}
+                                              className="text-sm"
+                                            />
+                                          )}
+                                          {image.startsWith("data:") && (
+                                            <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
+                                              ✅ Imagen procesada ({((image.length * 3) / 4 / 1024).toFixed(2)} KB)
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Especificaciones para edición */}
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <Label>Especificaciones Técnicas</Label>
+                                    <Button
+                                      type="button"
+                                      onClick={() => addSpecification(true)}
+                                      size="sm"
+                                      variant="outline"
+                                    >
+                                      <Plus className="h-4 w-4 mr-2" />
+                                      Agregar Especificación
+                                    </Button>
+                                  </div>
+                                  {editSpecifications.map((spec, index) => (
+                                    <div key={index} className="grid grid-cols-2 gap-2">
+                                      <Input
+                                        placeholder="Característica (ej: Procesador)"
+                                        value={spec.key}
+                                        onChange={(e) => updateSpecification(index, "key", e.target.value, true)}
+                                      />
+                                      <div className="flex gap-2">
+                                        <Input
+                                          placeholder="Valor (ej: Intel Core i7)"
+                                          value={spec.value}
+                                          onChange={(e) => updateSpecification(index, "value", e.target.value, true)}
+                                        />
+                                        <Button
+                                          type="button"
+                                          onClick={() => removeSpecification(index, true)}
+                                          size="sm"
+                                          variant="outline"
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
 
                                 <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={() => setEditingProduct(null)}>
+                                  <Button variant="outline" onClick={resetEditForm}>
                                     Cancelar
                                   </Button>
                                   <Button onClick={updateProduct}>Actualizar</Button>
@@ -974,7 +1287,6 @@ export default function AdminProducts() {
                             )}
                           </DialogContent>
                         </Dialog>
-
                         <Button
                           size="sm"
                           variant={product.isActive ? "destructive" : "default"}
@@ -983,7 +1295,6 @@ export default function AdminProducts() {
                         >
                           {product.isActive ? "Des" : "Act"}
                         </Button>
-
                         <Button
                           size="sm"
                           variant="destructive"

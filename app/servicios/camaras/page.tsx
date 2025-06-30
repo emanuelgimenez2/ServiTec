@@ -75,8 +75,7 @@ export default function CamarasPage() {
               Tecnología avanzada para proteger tu hogar, negocio o empresa con monitoreo 24/7 y alertas en tiempo real
             </p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
-            
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
               <CardHeader className="text-center pb-2 sm:pb-4 p-3 sm:p-6">
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center mx-auto mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -250,7 +249,7 @@ export default function CamarasPage() {
               Equipos de las mejores marcas mundiales con la última tecnología en videovigilancia
             </p>
           </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-6 lg:gap-8">
              <Card className="p-3 sm:p-6 hover:shadow-lg transition-shadow">
               <div className="flex items-center mb-2 sm:mb-4">
                 <Wifi className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 mr-2 sm:mr-3 flex-shrink-0" />
@@ -281,7 +280,7 @@ export default function CamarasPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-8 sm:py-12 lg:py-20 bg-gray-50">
+      <section className="py-8 sm:py-12 lg:py-20 bg-gray">
         <div className="container mx-auto px-3 sm:px-4 lg:px-8">
           <div className="text-center mb-8 sm:mb-12 lg:mb-16">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
@@ -291,12 +290,12 @@ export default function CamarasPage() {
               Resolvemos las dudas más comunes sobre sistemas de videovigilancia
             </p>
           </div>
-          <div className="max-w-4xl mx-auto grid grid-cols-2 gap-3 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
             <Card className="p-3 sm:p-6 hover:shadow-lg transition-shadow">
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Qué incluye la instalación?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
+              <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
                 Incluye: cámaras, configuración completa, app móvil, pruebas de
                 funcionamiento y capacitación básica.
               </p>
@@ -306,7 +305,7 @@ export default function CamarasPage() {
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Cuánto tiempo toma la instalación?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
+              <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
                 Depende del número de cámaras: 2-4 cámaras (4-6 horas), 4-8 cámaras (6-8 horas), sistemas más grandes
                 pueden requerir 1-2 días.
               </p>
@@ -316,7 +315,7 @@ export default function CamarasPage() {
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Puedo ver las cámaras desde mi celular?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
+              <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
                 Sí, incluimos app móvil gratuita para iOS y Android. Podrás ver en vivo, recibir alertas y revisar
                 grabaciones desde cualquier lugar.
               </p>
@@ -326,7 +325,7 @@ export default function CamarasPage() {
               <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-2 sm:mb-3 text-gray-900">
                 ¿Las cámaras funcionan de noche?
               </h3>
-              <p className="text-xs sm:text-sm lg:text-base text-gray-600">
+              <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-1 sm:mb-4 line-clamp-30">
                 Sí, todas nuestras cámaras incluyen visión nocturna infrarroja con alcance de 20-30 metros en completa
                 oscuridad.
               </p>
