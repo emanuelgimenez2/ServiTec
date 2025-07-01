@@ -32,4 +32,32 @@ export const storage = getStorage(app) // ✅ AGREGAR ESTA LÍNEA
 console.log("✅ Firebase inicializado correctamente")
 
 export default app
+
+// Crear nuevo documento con nombre personalizado
+      const cartData = {
+        userId,
+        items: cart.items,
+        total: cart.total,
+        status: "completed",
+        compraNumber: compraNumber,
+        userName: userName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }
+
+      // Crear documento con ID personalizado
+      const customDocRef = doc(db, "carrito", documentName)
+      await setDoc(customDocRef, cartData)
+
+      // Eliminar el carrito activo original
+      const cartRef = doc(db, "carrito", cart.id)
+      await deleteDoc(cartRef)
+
+      console.log("✅ Carrito completado exitosamente con nombre:", documentName)
+    } catch (error) {
+      console.error("❌ Error completando carrito:", error)
+      throw error
+    }
+  },
+
 */}

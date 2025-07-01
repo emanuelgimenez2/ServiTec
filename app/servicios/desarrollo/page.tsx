@@ -1,24 +1,43 @@
 "use client"
 
-import {
-  Globe,
-  Code,
-  Smartphone,
-  Zap,
-  Search,
-  ShoppingCart,
-  BarChart,
-  Rocket,
-  Monitor,
-  Database,
-  Cloud,
-  Layers,
-} from "lucide-react"
+import { Globe, Code, Smartphone, Zap, Search, ShoppingCart, Rocket, Monitor, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
 export default function DesarrolloPage() {
+  const portfolioProjects = [
+    {
+      title: "Cicloturismo Termal",
+      description: "SPA con información e inscripción al evento, con analíticas y dashboards completos.",
+      image: "/ciclo.jpg?height=200&width=300",
+      link: "https://ciclo-turismo.vercel.app/",
+      technologies: ["React", "Node.js", "JavaScript", "Tailwind CSS", "Firebase", "100% responsive", "mobile-first"],
+    },
+    {
+      title: "El Mangrullo",
+      description:
+        "SPA con información de un complejo de departamentos en Federación, con analíticas y dashboards completos.",
+      image: "/man.jpg?height=200&width=300",
+      link: "https://mangrullo.vercel.app/",
+      technologies: ["React", "Node.js", "JavaScript", "Tailwind CSS", "Firebase", "100% responsive", "mobile-first"],
+    },
+    {
+      title: "Gestoria OAM",
+      description: "SPA con datos y venta de náuticas y automotores.",
+      image: "/om.jpg?height=200&width=300",
+      link: "https://gestoria-three.vercel.app/",
+      technologies: ["React", "Node.js", "JavaScript", "Tailwind CSS", "Firebase", "100% responsive", "mobile-first"],
+    },
+    {
+      title: "Página de Turnos",
+      description: "SPA con datos y control de turnos para un mayor control.",
+      image: "/pref.jpg?height=200&width=300",
+      link: "https://turno-polinave.vercel.app/",
+      technologies: ["React", "Node.js", "JavaScript", "Tailwind CSS", "Firebase", "100% responsive", "mobile-first"],
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-50 pt-16">
       {/* Hero Section */}
@@ -177,8 +196,6 @@ export default function DesarrolloPage() {
         </div>
       </section>
 
-      
-
       {/* Process Section */}
       <section className="py-8 sm:py-12 lg:py-20 bg-white">
         <div className="container mx-auto px-3 sm:px-4 lg:px-8">
@@ -245,145 +262,40 @@ export default function DesarrolloPage() {
             </p>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="h-32 sm:h-40 lg:h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-                <Monitor className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
-              </div>
-              <CardContent className="p-3 sm:p-6">
-                <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2">Cicloturismo Termal</h3>
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
-                  SPA con informacion e iscripción al evento, con analiticas y dashboards completos.
-                </p>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    React
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Node.js
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    JavaScript
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Tailwind CSS
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Firebase
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    100% responsive
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    mobile-first
-                  </Badge>
+            {portfolioProjects.map((project, index) => (
+              <Card
+                key={index}
+                className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
+                onClick={() => window.open(project.link, "_blank")}
+              >
+                <div className="relative h-32 sm:h-40 lg:h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={project.image || "/placeholder.svg"}
+                    alt={project.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                    <ExternalLink className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="h-32 sm:h-40 lg:h-48 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-                <Globe className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
-              </div>
-              <CardContent className="p-3 sm:p-6">
-                <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2">El Mangrullo</h3>
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
-                  SPA con informacion de un complejo de departamentos en Federacion, con analiticas y dashboards completos.
-                </p>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    React
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Node.js
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    JavaScript
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Tailwind CSS
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Firebase
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    100% responsive
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    mobile-first
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="h-32 sm:h-40 lg:h-48 bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
-                <BarChart className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
-              </div>
-              <CardContent className="p-3 sm:p-6">
-                <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2">Gestoria OAM</h3>
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
-                  SPA con datos y venta de nauticas y automotores.
-                </p>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    React
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Node.js
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    JavaScript
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Tailwind CSS
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Firebase
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    100% responsive
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    mobile-first
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden hover:shadow-xl transition-shadow">
-              <div className="h-32 sm:h-40 lg:h-48 bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
-                <BarChart className="w-12 h-12 sm:w-16 sm:h-16 text-white" />
-              </div>
-              <CardContent className="p-3 sm:p-6">
-                <h3 className="font-bold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2">Pagina de turnos</h3>
-                <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
-                  SPA con datos y control de turnos para un mayor control.
-                </p>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    React
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Node.js
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    JavaScript
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Tailwind CSS
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    Firebase
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    100% responsive
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    mobile-first
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
+                <CardContent className="p-3 sm:p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-sm sm:text-base lg:text-lg">{project.title}</h3>
+                    <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                  </div>
+                  <p className="text-xs sm:text-sm lg:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-20">
+                    {project.description}
+                  </p>
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
+                    {project.technologies.map((tech, techIndex) => (
+                      <Badge key={techIndex} variant="outline" className="text-xs">
+                        {tech}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>

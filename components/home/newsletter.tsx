@@ -1,109 +1,142 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
-import { Mail, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
+import { Mail, CheckCircle, AlertCircle } from "lucide-react"
+import { auth } from "@/lib/firebase"
+import { perfilService } from "@/lib/firebase-services"
 
 export default function Newsletter() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [isSubscribed, setIsSubscribed] = useState(false)
   const { toast } = useToast()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault()
+
+    if (!email) {
+      toast({
+        title: "Error",
+        description: "Por favor ingresa tu email",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Verificar si hay un usuario logueado
+      const currentUser = auth.currentUser
+
+      if (currentUser) {
+        // Usuario logueado: guardar en su perfil
+        await perfilService.subscribeToNewsletter(currentUser.uid, email)
+        console.log("✅ Newsletter guardado en perfil del usuario logueado")
+      } else {
+        // Usuario no logueado: crear perfil temporal o guardar en colección separada
+        // Por ahora, mostrar mensaje pidiendo que se registre
+        toast({
+          title: "Registro requerido",
+          description: "Para suscribirte al newsletter, por favor inicia sesión o regístrate",
+          variant: "destructive",
+        })
+        setIsLoading(false)
+        return
+      }
+
+      setIsSubscribed(true)
+      setEmail("")
+
       toast({
         title: "¡Suscripción exitosa!",
-        description: "Te has suscrito correctamente a nuestro newsletter.",
+        description: "Te has suscrito al newsletter. Recibirás nuestras novedades.",
       })
-      setEmail("")
+    } catch (error) {
+      console.error("Error subscribing to newsletter:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo completar la suscripción. Intenta nuevamente.",
+        variant: "destructive",
+      })
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
+  }
+
+  if (isSubscribed) {
+    return (
+      <section className="py-16 bg-gradient-to-r from-purple-900/20 to-blue-900/20">
+        <div className="container mx-auto px-4">
+          <Card className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md border-white/20">
+            <CardContent className="p-8 text-center">
+              <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-400" />
+              <h3 className="text-2xl font-bold text-white mb-2">¡Gracias por suscribirte!</h3>
+              <p className="text-white/80">Recibirás nuestras últimas novedades y ofertas especiales en tu email.</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    )
   }
 
   return (
-    <section className="py-12 sm:py-20 bg-gradient-to-r from-purple-600 via-violet-600 to-purple-700">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Icon */}
-          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-full mb-4 sm:mb-6">
-            <Mail className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-          </div>
+    <section className="py-16 bg-gradient-to-r from-purple-900/20 to-blue-900/20">
+      <div className="container mx-auto px-4">
+        <Card className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md border-white/20">
+          <CardContent className="p-8">
+            <div className="text-center mb-6">
+              <Mail className="h-12 w-12 mx-auto mb-4 text-blue-400" />
+              <h3 className="text-2xl font-bold text-white mb-2">Mantente Actualizado</h3>
+              <p className="text-white/80">
+                Suscríbete a nuestro newsletter y recibe las últimas novedades, ofertas especiales y consejos técnicos.
+              </p>
+            </div>
 
-          {/* Header */}
-          <h2 className="text-3xl sm:text-5xl font-bold text-white mb-2 sm:mb-4">Mantente Actualizado</h2>
-          <p className="text-base sm:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto">
-            Suscríbete a nuestro newsletter y recibe ofertas exclusivas, novedades tecnológicas y consejos útiles
-          </p>
-
-          {/* Newsletter Form */}
-          <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-6 sm:mb-8">
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <div className="flex-1">
+            <form onSubmit={handleSubscribe} className="space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   type="email"
-                  placeholder="Tu email aquí..."
+                  placeholder="Tu email para notificaciones..."
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 sm:px-6 sm:py-4 text-sm sm:text-lg bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-white/70 focus:bg-white/20 focus:border-white/40"
+                  className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-blue-400"
+                  disabled={isLoading}
                 />
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white px-8"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                      Suscribiendo...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Suscribirse
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                size="lg"
-                className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-6 py-3 sm:px-8 sm:py-4 text-sm sm:text-lg rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Send className="w-5 h-5 mr-2" />
-                    Suscribirse
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
 
-          {/* Benefits */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 text-white/90 justify-items-center">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mb-2 sm:mb-3">
-                <span className="text-xl sm:text-2xl">🎯</span>
-              </div>
-              <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">Ofertas Exclusivas</h3>
-              <p className="text-xs sm:text-sm text-white/70">Descuentos especiales solo para suscriptores</p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mb-2 sm:mb-3">
-                <span className="text-xl sm:text-2xl">📱</span>
-              </div>
-              <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">Novedades Tech</h3>
-              <p className="text-xs sm:text-sm text-white/70">Las últimas tendencias en tecnología</p>
-            </div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-full flex items-center justify-center mb-2 sm:mb-3">
-                <span className="text-xl sm:text-2xl">💡</span>
-              </div>
-              <h3 className="font-semibold text-sm sm:text-base mb-1 sm:mb-2">Consejos Útiles</h3>
-              <p className="text-xs sm:text-sm text-white/70">Tips para cuidar tus dispositivos</p>
-            </div>
-          </div>
+              <p className="text-xs text-white/60 text-center">
+                Al suscribirte, aceptas recibir emails promocionales. Puedes darte de baja en cualquier momento.
+              </p>
+            </form>
 
-          {/* Privacy Note */}
-          <p className="mt-6 sm:mt-8 text-xs sm:text-sm text-white/70 text-center">
-            No compartimos tu información. Puedes darte de baja en cualquier momento.
-          </p>
-        </div>
+            <div className="mt-6 flex items-center justify-center gap-2 text-sm text-white/70">
+              <AlertCircle className="h-4 w-4" />
+              <span>Necesitas estar registrado para suscribirte</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </section>
   )

@@ -10,7 +10,7 @@ import {
   orderBy,
   serverTimestamp,
   getDoc,
-  limit,
+  setDoc,
 } from "firebase/firestore"
 import { db } from "./firebase"
 
@@ -183,21 +183,24 @@ export interface Usuario extends Service {
   isActive?: boolean
 }
 
-export interface Product extends Service {
+export interface Product {
+  id: string
   name: string
   description: string
   price: number
   originalPrice?: number
-  stock: number
   category: string
   brand?: string
   image: string
   images?: string[]
+  stock: number
+  isActive: boolean
+  isNew?: boolean
   rating?: number
   reviews?: number
-  isNew?: boolean
-  isActive?: boolean
   specifications?: Record<string, string>
+  createdAt: string
+  updatedAt: string
 }
 
 export interface CartItem {
@@ -209,23 +212,19 @@ export interface CartItem {
   category: string
 }
 
-export interface Cart extends Service {
+export interface Cart {
+  id: string
   userId: string
   items: CartItem[]
   total: number
-  status: "active" | "completed" | "abandoned"
+  status: "active" | "completed"
+  compraNumber?: number
+  createdAt: string
+  updatedAt: string
 }
 
-export interface Perfil extends Service {
-  userId: string
-  name: string
-  email: string
-  phone?: string
-  address?: string
-  avatar?: string
-}
-
-export interface Order extends Service {
+export interface Order {
+  id?: string
   userId: string
   userName: string
   userEmail: string
@@ -241,6 +240,18 @@ export interface Order extends Service {
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled"
   shippingAddress: string
   paymentMethod: string
+  createdAt?: any
+  updatedAt?: any
+}
+
+export interface Perfil extends Service {
+  userId: string
+  name: string
+  email: string
+  phone?: string
+  address?: string
+  avatar?: string
+  emailNotificaciones?: string
 }
 
 // Specific service implementations
@@ -258,7 +269,7 @@ export const turnosService = {
         throw new Error("Firebase db no está inicializado")
       }
 
-      const q = query(collection(db, "turnos"), where("userId", "==", userId), orderBy("createdAt", "desc"))
+      const q = query(collection(db, "turnos"), where("userId", "==", userId))
       const querySnapshot = await getDocs(q)
 
       console.log(`✅ Turnos del usuario obtenidos:`, querySnapshot.size)
@@ -266,7 +277,7 @@ export const turnosService = {
       const appointments = querySnapshot.docs.map((doc) => createServiceObject<Turno>(doc))
       console.log(`📄 Turnos procesados:`, appointments)
 
-      return appointments
+      return appointments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     } catch (error) {
       console.error("❌ Error obteniendo turnos del usuario:", error)
       throw error
@@ -373,7 +384,7 @@ export const perfilService = {
         throw new Error("Firebase db no está inicializado")
       }
 
-      const q = query(collection(db, "perfiles"), where("userId", "==", userId))
+      const q = query(collection(db, "perfil"), where("userId", "==", userId))
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
@@ -398,7 +409,7 @@ export const perfilService = {
         throw new Error("Firebase db no está inicializado")
       }
 
-      const q = query(collection(db, "perfiles"), where("userId", "==", userId))
+      const q = query(collection(db, "perfil"), where("userId", "==", userId))
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
@@ -406,11 +417,11 @@ export const perfilService = {
           userId,
           ...profileData,
         }
-        await createService<Perfil>("perfiles", newProfile)
+        await createService<Perfil>("perfil", newProfile)
         console.log("✅ Nuevo perfil creado")
       } else {
         const profileDoc = querySnapshot.docs[0]
-        await updateService<Perfil>("perfiles", profileDoc.id, profileData)
+        await updateService<Perfil>("perfil", profileDoc.id, profileData)
         console.log("✅ Perfil actualizado")
       }
     } catch (error) {
@@ -422,7 +433,7 @@ export const perfilService = {
   createProfile: async (profileData: Omit<Perfil, "id" | "createdAt" | "updatedAt">): Promise<string> => {
     console.log("🆕 === CREANDO PERFIL ===", profileData)
     try {
-      const profileId = await createService<Perfil>("perfiles", profileData)
+      const profileId = await createService<Perfil>("perfil", profileData)
       console.log("✅ Perfil creado con ID:", profileId)
       return profileId
     } catch (error) {
@@ -430,163 +441,171 @@ export const perfilService = {
       throw error
     }
   },
+
+  subscribeToNewsletter: async (userId: string, email: string): Promise<void> => {
+    console.log("📧 === SUSCRIBIENDO A NEWSLETTER ===", { userId, email })
+    try {
+      await perfilService.updateProfile(userId, { emailNotificaciones: email })
+      console.log("✅ Suscripción a newsletter exitosa")
+    } catch (error) {
+      console.error("❌ Error suscribiendo a newsletter:", error)
+      throw error
+    }
+  },
 }
 
 export const productosService = {
-  createProduct: async (data: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<string> => {
-    console.log("🚀 === INICIANDO CREACIÓN DE PRODUCTO ===")
-    console.log("📝 Datos recibidos:", data)
-
+  async getAllProducts(): Promise<Product[]> {
     try {
-      if (!db) {
-        throw new Error("❌ Firebase db no está inicializado")
-      }
-      console.log("✅ Firebase db disponible")
+      console.log("🔥 Obteniendo todos los productos...")
+      const querySnapshot = await getDocs(collection(db, "productos"))
+      const products = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      })) as Product[]
 
-      const productData = {
-        name: data.name,
-        description: data.description || "",
-        price: Number(data.price),
-        originalPrice: data.originalPrice || Number(data.price) * 1.2,
-        stock: Number(data.stock) || 0,
-        category: data.category,
-        brand: data.brand || "Sin especificar",
-        image: data.image || "/placeholder.svg?height=300&width=300",
-        images: data.images || [data.image || "/placeholder.svg?height=600&width=600"],
-        rating: data.rating || 4.5,
-        reviews: data.reviews || 0,
-        isNew: data.isNew !== undefined ? data.isNew : true,
-        isActive: data.isActive !== undefined ? data.isActive : true,
-        specifications: data.specifications || {},
+      console.log(`✅ ${products.length} productos obtenidos`)
+      return products
+    } catch (error) {
+      console.error("❌ Error obteniendo productos:", error)
+      throw error
+    }
+  },
+
+  async getProductById(id: string): Promise<Product | null> {
+    try {
+      const docRef = doc(db, "productos", id)
+      const docSnap = await getDoc(docRef)
+
+      if (docSnap.exists()) {
+        return {
+          id: docSnap.id,
+          ...docSnap.data(),
+          createdAt: docSnap.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          updatedAt: docSnap.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        } as Product
+      }
+
+      return null
+    } catch (error) {
+      console.error("Error obteniendo producto:", error)
+      throw error
+    }
+  },
+
+  async createProduct(productData: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<string> {
+    try {
+      const docRef = await addDoc(collection(db, "productos"), {
+        ...productData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      }
-
-      console.log("📦 Datos preparados para Firebase:", productData)
-
-      const docRef = await addDoc(collection(db, "productos"), productData)
-
-      console.log("🎉 ¡PRODUCTO CREADO EXITOSAMENTE!")
-      console.log("🆔 ID del documento:", docRef.id)
-
+      })
       return docRef.id
     } catch (error) {
-      console.error("💥 === ERROR AL CREAR PRODUCTO ===")
-      console.error("❌ Error completo:", error)
+      console.error("Error creando producto:", error)
       throw error
     }
   },
 
-  getAllProducts: async (): Promise<Product[]> => {
-    console.log("📋 === OBTENIENDO TODOS LOS PRODUCTOS ===")
-    return getAllServices<Product>("productos")
-  },
-
-  getActiveProducts: async (): Promise<Product[]> => {
-    console.log("🟢 === OBTENIENDO PRODUCTOS ACTIVOS ===")
+  async updateProduct(id: string, productData: Partial<Product>): Promise<void> {
     try {
-      if (!db) {
-        throw new Error("Firebase db no está inicializado")
-      }
-
-      console.log("🔍 Creando query para productos activos...")
-      const q = query(collection(db, "productos"), where("isActive", "==", true), orderBy("createdAt", "desc"))
-
-      console.log("📡 Ejecutando query...")
-      const querySnapshot = await getDocs(q)
-
-      console.log("📊 Resultados obtenidos:", querySnapshot.size)
-
-      const products = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      })) as Product[]
-
-      console.log("✅ Productos procesados:", products.length)
-      return products
+      const docRef = doc(db, "productos", id)
+      await updateDoc(docRef, {
+        ...productData,
+        updatedAt: serverTimestamp(),
+      })
     } catch (error) {
-      console.error("❌ Error obteniendo productos activos:", error)
+      console.error("Error actualizando producto:", error)
       throw error
     }
   },
 
-  getFeaturedProducts: async (): Promise<Product[]> => {
-    console.log("⭐ === OBTENIENDO PRODUCTOS DESTACADOS ===")
+  async deleteProduct(id: string): Promise<void> {
     try {
-      if (!db) {
-        throw new Error("Firebase db no está inicializado")
-      }
+      await deleteDoc(doc(db, "productos", id))
+    } catch (error) {
+      console.error("Error eliminando producto:", error)
+      throw error
+    }
+  },
 
-      console.log("🔍 Creando query para productos destacados...")
-      const q = query(
-        collection(db, "productos"),
-        where("isActive", "==", true),
-        where("isNew", "==", true),
-        orderBy("createdAt", "desc"),
-        limit(6),
-      )
+  updateStock: async (productId: string, newStock: number): Promise<void> => {
+    try {
+      const docRef = doc(db, "productos", productId)
+      await updateDoc(docRef, {
+        stock: newStock,
+        updatedAt: serverTimestamp(),
+      })
+    } catch (error) {
+      console.error("Error actualizando stock:", error)
+      throw error
+    }
+  },
+}
 
-      console.log("📡 Ejecutando query...")
+// Helper function to generate cart document name - ARREGLADO
+const generateCartDocumentName = (userName: string, compraNumber: number): string => {
+  // Validar que userName existe y no es undefined/null
+  if (!userName || typeof userName !== "string") {
+    console.warn("⚠️ userName es undefined o inválido, usando 'usuario' por defecto")
+    userName = "usuario"
+  }
+
+  // Limpiar el nombre del usuario (remover espacios, caracteres especiales)
+  const cleanName = userName
+    .toLowerCase()
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9]/g, "")
+    .substring(0, 20) // Limitar longitud
+
+  return `${cleanName || "usuario"}-compra${compraNumber}`
+}
+
+export const carritoService = {
+  async getUserCart(userId: string): Promise<Cart | null> {
+    try {
+      console.log("🛒 Obteniendo carrito para usuario:", userId)
+
+      // Buscar carrito activo del usuario - Query simplificada
+      const q = query(collection(db, "carrito"), where("userId", "==", userId), where("status", "==", "active"))
+
       const querySnapshot = await getDocs(q)
 
-      console.log("📊 Productos destacados obtenidos:", querySnapshot.size)
+      if (!querySnapshot.empty) {
+        // Ordenar por fecha de creación en el cliente
+        const docs = querySnapshot.docs.sort((a, b) => {
+          const aTime = a.data().createdAt?.toDate?.()?.getTime() || 0
+          const bTime = b.data().createdAt?.toDate?.()?.getTime() || 0
+          return bTime - aTime
+        })
 
-      const products = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      })) as Product[]
-
-      console.log("✅ Productos destacados procesados:", products.length)
-      return products
-    } catch (error) {
-      console.error("❌ Error obteniendo productos destacados:", error)
-      try {
-        const q = query(
-          collection(db, "productos"),
-          where("isActive", "==", true),
-          orderBy("createdAt", "desc"),
-          limit(6),
-        )
-        const querySnapshot = await getDocs(q)
-        const products = querySnapshot.docs.map((doc) => ({
+        const doc = docs[0]
+        const cartData = {
           id: doc.id,
           ...doc.data(),
           createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
           updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        })) as Product[]
+        } as Cart
 
-        console.log("✅ Fallback: productos activos obtenidos:", products.length)
-        return products
-      } catch (fallbackError) {
-        console.error("❌ Error en fallback:", fallbackError)
-        return []
+        console.log("✅ Carrito encontrado:", cartData.id, "Items:", cartData.items.length)
+        return cartData
       }
-    }
-  },
 
-  updateProduct: (id: string, data: Partial<Product>) => updateService<Product>("productos", id, data),
-  deleteProduct: (id: string) => deleteService("productos", id),
-
-  toggleProductStatus: async (productId: string, isActive: boolean): Promise<void> => {
-    try {
-      const productRef = doc(db, "productos", productId)
-      await updateDoc(productRef, { isActive, updatedAt: serverTimestamp() })
+      console.log("ℹ️ No se encontró carrito activo, creando uno nuevo...")
+      return await this.createUserCart(userId)
     } catch (error) {
-      console.error("Error toggling product status:", error)
+      console.error("❌ Error obteniendo carrito:", error)
       throw error
     }
   },
-}
 
-export const carritoService = {
-  createUserCart: async (userId: string): Promise<string> => {
-    console.log("🛒 === CREANDO CARRITO PARA USUARIO ===", userId)
+  async createUserCart(userId: string): Promise<Cart> {
     try {
-      const cartData = {
+      console.log("🆕 Creando nuevo carrito para usuario:", userId)
+
+      const newCart = {
         userId,
         items: [],
         total: 0,
@@ -595,169 +614,211 @@ export const carritoService = {
         updatedAt: serverTimestamp(),
       }
 
-      const docRef = await addDoc(collection(db, "carrito"), cartData)
-      console.log("✅ Carrito creado con ID:", docRef.id)
-      return docRef.id
+      const docRef = await addDoc(collection(db, "carrito"), newCart)
+
+      const cart: Cart = {
+        id: docRef.id,
+        userId,
+        items: [],
+        total: 0,
+        status: "active",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+
+      console.log("✅ Carrito creado:", cart.id)
+      return cart
     } catch (error) {
       console.error("❌ Error creando carrito:", error)
       throw error
     }
   },
 
-  getUserCart: async (userId: string): Promise<Cart | null> => {
-    console.log("🔍 === OBTENIENDO CARRITO DEL USUARIO ===", userId)
+  async addToCart(userId: string, product: Product, quantity = 1): Promise<void> {
     try {
-      const q = query(collection(db, "carrito"), where("userId", "==", userId), where("status", "==", "active"))
-      const querySnapshot = await getDocs(q)
+      console.log("➕ Agregando al carrito:", { userId, productId: product.id, quantity })
 
-      if (querySnapshot.empty) {
-        console.log("📭 No se encontró carrito activo para el usuario")
-        return null
+      let cart = await this.getUserCart(userId)
+      if (!cart) {
+        cart = await this.createUserCart(userId)
       }
 
-      const cartDoc = querySnapshot.docs[0]
-      const cart = createServiceObject<Cart>(cartDoc)
-      console.log("✅ Carrito encontrado:", cart)
-      return cart
-    } catch (error) {
-      console.error("❌ Error obteniendo carrito:", error)
-      throw error
-    }
-  },
-
-  addToCart: async (userId: string, product: Product, quantity = 1): Promise<void> => {
-    console.log("➕ === AGREGANDO PRODUCTO AL CARRITO ===", { userId, productId: product.id, quantity })
-    try {
-      let userCart = await carritoService.getUserCart(userId)
-
-      if (!userCart) {
-        const cartId = await carritoService.createUserCart(userId)
-        userCart = await carritoService.getCartById(cartId)
+      // Verificar stock disponible
+      if (product.stock < quantity) {
+        throw new Error("Stock insuficiente")
       }
 
-      if (!userCart) {
-        throw new Error("No se pudo crear o encontrar el carrito")
-      }
-
-      const existingItemIndex = userCart.items.findIndex((item) => item.productId === product.id)
-      const updatedItems = [...userCart.items]
+      // Buscar si el producto ya existe en el carrito
+      const existingItemIndex = cart.items.findIndex((item) => item.productId === product.id)
 
       if (existingItemIndex >= 0) {
-        updatedItems[existingItemIndex].quantity += quantity
+        // Verificar cuánto stock ya está en el carrito
+        const currentQuantityInCart = cart.items[existingItemIndex].quantity
+        const newQuantity = currentQuantityInCart + quantity
+
+        // Verificar que no exceda el stock disponible
+        if (newQuantity > product.stock) {
+          throw new Error(
+            `Ya agregaste ${currentQuantityInCart} unidades de este producto. Solo tenemos ${product.stock} en stock.`,
+          )
+        }
+
+        cart.items[existingItemIndex].quantity = newQuantity
       } else {
+        // Agregar nuevo producto al carrito
         const newItem: CartItem = {
-          productId: product.id!,
+          productId: product.id,
           name: product.name,
           price: product.price,
           quantity,
           image: product.image,
           category: product.category,
         }
-        updatedItems.push(newItem)
+        cart.items.push(newItem)
       }
 
-      await carritoService.updateCart(userCart.id!, updatedItems)
-      console.log("✅ Producto agregado al carrito exitosamente")
-    } catch (error) {
-      console.error("❌ Error agregando producto al carrito:", error)
-      throw error
-    }
-  },
+      // Recalcular total
+      cart.total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  updateCart: async (cartId: string, items: CartItem[]): Promise<void> => {
-    console.log("🔄 === ACTUALIZANDO CARRITO ===", { cartId, itemsCount: items.length })
-    try {
-      const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-
-      const cartRef = doc(db, "carrito", cartId)
+      // Actualizar en Firebase
+      const cartRef = doc(db, "carrito", cart.id)
       await updateDoc(cartRef, {
-        items,
-        total,
+        items: cart.items,
+        total: cart.total,
         updatedAt: serverTimestamp(),
       })
 
-      console.log("✅ Carrito actualizado exitosamente")
+      console.log("✅ Producto agregado al carrito exitosamente")
     } catch (error) {
-      console.error("❌ Error actualizando carrito:", error)
+      console.error("❌ Error agregando al carrito:", error)
       throw error
     }
   },
 
-  getCartById: async (cartId: string): Promise<Cart | null> => {
-    return getServiceById<Cart>("carrito", cartId)
-  },
-
-  removeFromCart: async (userId: string, productId: string): Promise<void> => {
-    console.log("🗑️ === ELIMINANDO PRODUCTO DEL CARRITO ===", { userId, productId })
+  async updateQuantity(userId: string, productId: string, newQuantity: number): Promise<void> {
     try {
-      const userCart = await carritoService.getUserCart(userId)
-      if (!userCart) {
-        throw new Error("Carrito no encontrado")
+      console.log("📊 Actualizando cantidad:", { userId, productId, newQuantity })
+
+      const cart = await this.getUserCart(userId)
+      if (!cart) throw new Error("Carrito no encontrado")
+
+      const itemIndex = cart.items.findIndex((item) => item.productId === productId)
+      if (itemIndex === -1) throw new Error("Producto no encontrado en el carrito")
+
+      if (newQuantity <= 0) {
+        // Eliminar producto si la cantidad es 0 o menor
+        cart.items.splice(itemIndex, 1)
+      } else {
+        // Actualizar cantidad
+        cart.items[itemIndex].quantity = newQuantity
       }
 
-      const updatedItems = userCart.items.filter((item) => item.productId !== productId)
-      await carritoService.updateCart(userCart.id!, updatedItems)
-      console.log("✅ Producto eliminado del carrito")
-    } catch (error) {
-      console.error("❌ Error eliminando producto del carrito:", error)
-      throw error
-    }
-  },
+      // Recalcular total
+      cart.total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
-  updateQuantity: async (userId: string, productId: string, quantity: number): Promise<void> => {
-    console.log("📊 === ACTUALIZANDO CANTIDAD ===", { userId, productId, quantity })
-    try {
-      if (quantity <= 0) {
-        await carritoService.removeFromCart(userId, productId)
-        return
-      }
+      // Actualizar en Firebase
+      const cartRef = doc(db, "carrito", cart.id)
+      await updateDoc(cartRef, {
+        items: cart.items,
+        total: cart.total,
+        updatedAt: serverTimestamp(),
+      })
 
-      const userCart = await carritoService.getUserCart(userId)
-      if (!userCart) {
-        throw new Error("Carrito no encontrado")
-      }
-
-      const updatedItems = userCart.items.map((item) => (item.productId === productId ? { ...item, quantity } : item))
-
-      await carritoService.updateCart(userCart.id!, updatedItems)
-      console.log("✅ Cantidad actualizada")
+      console.log("✅ Cantidad actualizada exitosamente")
     } catch (error) {
       console.error("❌ Error actualizando cantidad:", error)
       throw error
     }
   },
 
-  clearCart: async (userId: string): Promise<void> => {
-    console.log("🧹 === LIMPIANDO CARRITO ===", userId)
+  async removeFromCart(userId: string, productId: string): Promise<void> {
     try {
-      const userCart = await carritoService.getUserCart(userId)
-      if (!userCart) {
-        return
-      }
+      console.log("🗑️ Eliminando del carrito:", { userId, productId })
 
-      await carritoService.updateCart(userCart.id!, [])
-      console.log("✅ Carrito limpiado")
+      const cart = await this.getUserCart(userId)
+      if (!cart) throw new Error("Carrito no encontrado")
+
+      // Filtrar el producto a eliminar
+      cart.items = cart.items.filter((item) => item.productId !== productId)
+
+      // Recalcular total
+      cart.total = cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+      // Actualizar en Firebase
+      const cartRef = doc(db, "carrito", cart.id)
+      await updateDoc(cartRef, {
+        items: cart.items,
+        total: cart.total,
+        updatedAt: serverTimestamp(),
+      })
+
+      console.log("✅ Producto eliminado del carrito exitosamente")
+    } catch (error) {
+      console.error("❌ Error eliminando del carrito:", error)
+      throw error
+    }
+  },
+
+  async clearCart(userId: string): Promise<void> {
+    try {
+      console.log("🧹 Limpiando carrito:", userId)
+
+      const cart = await this.getUserCart(userId)
+      if (!cart) throw new Error("Carrito no encontrado")
+
+      // Limpiar items y total
+      const cartRef = doc(db, "carrito", cart.id)
+      await updateDoc(cartRef, {
+        items: [],
+        total: 0,
+        updatedAt: serverTimestamp(),
+      })
+
+      console.log("✅ Carrito limpiado exitosamente")
     } catch (error) {
       console.error("❌ Error limpiando carrito:", error)
       throw error
     }
   },
 
-  completeCart: async (userId: string): Promise<void> => {
-    console.log("✅ === COMPLETANDO CARRITO ===", userId)
+  async completeCart(userId: string, userName?: string): Promise<void> {
     try {
-      const userCart = await carritoService.getUserCart(userId)
-      if (!userCart) {
-        throw new Error("Carrito no encontrado")
+      console.log("✅ Completando carrito:", { userId, userName })
+
+      const cart = await this.getUserCart(userId)
+      if (!cart) throw new Error("Carrito no encontrado")
+
+      // Obtener el número de compra actual del usuario - Query simplificada
+      const userCartsQuery = query(collection(db, "carrito"), where("userId", "==", userId))
+
+      const allCarts = await getDocs(userCartsQuery)
+      const completedCarts = allCarts.docs.filter((doc) => doc.data().status === "completed")
+      const compraNumber = completedCarts.length + 1
+
+      // Generar nombre del documento - ARREGLADO
+      const documentName = generateCartDocumentName(userName || "usuario ", userName, compraNumber)
+
+      // Crear nuevo documento con nombre personalizado
+      const cartData = {
+        userId,
+        items: cart.items,
+        total: cart.total,
+        status: "completed",
+        compraNumber: compraNumber,
+        userName: userName || "usuario",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       }
 
-      const cartRef = doc(db, "carrito", userCart.id!)
-      await updateDoc(cartRef, {
-        status: "completed",
-        updatedAt: serverTimestamp(),
-      })
+      // Crear documento con ID personalizado
+      const customDocRef = doc(db, "carrito", documentName)
+      await setDoc(customDocRef, cartData)
 
-      console.log("✅ Carrito completado")
+      // Eliminar el carrito activo original
+      const cartRef = doc(db, "carrito", cart.id)
+      await deleteDoc(cartRef)
+
+      console.log("✅ Carrito completado exitosamente con nombre:", documentName)
     } catch (error) {
       console.error("❌ Error completando carrito:", error)
       throw error
@@ -766,15 +827,17 @@ export const carritoService = {
 }
 
 export const pedidosService = {
-  createOrder: async (orderData: Omit<Order, "id" | "createdAt" | "updatedAt">): Promise<string> => {
+  async createOrder(orderData: Order): Promise<string> {
     try {
-      console.log("🛒 Creando pedido en Firebase:", orderData)
+      console.log("📦 Creando nuevo pedido...")
+
       const docRef = await addDoc(collection(db, "pedidos"), {
         ...orderData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
-      console.log("✅ Pedido creado con ID:", docRef.id)
+
+      console.log("✅ Pedido creado:", docRef.id)
       return docRef.id
     } catch (error) {
       console.error("❌ Error creando pedido:", error)
@@ -782,11 +845,10 @@ export const pedidosService = {
     }
   },
 
-  getAllOrders: async (): Promise<Order[]> => {
+  async getAllOrders(): Promise<Order[]> {
     try {
       console.log("📋 Obteniendo todos los pedidos...")
-      const q = query(collection(db, "pedidos"), orderBy("createdAt", "desc"))
-      const querySnapshot = await getDocs(q)
+      const querySnapshot = await getDocs(collection(db, "pedidos"))
 
       const orders = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -795,7 +857,10 @@ export const pedidosService = {
         updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
       })) as Order[]
 
-      console.log(`🛒 ${orders.length} pedidos obtenidos`)
+      // Ordenar por fecha de creación en el cliente
+      orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+      console.log(`✅ ${orders.length} pedidos obtenidos`)
       return orders
     } catch (error) {
       console.error("❌ Error obteniendo pedidos:", error)
@@ -803,86 +868,187 @@ export const pedidosService = {
     }
   },
 
-  updateOrder: (id: string, data: Partial<Order>) => updateService<Order>("pedidos", id, data),
-  deleteOrder: (id: string) => deleteService("pedidos", id),
-
-  updateOrderStatus: async (id: string, status: Order["status"]): Promise<void> => {
+  async getUserOrders(userId: string): Promise<Order[]> {
     try {
-      const docRef = doc(db, "pedidos", id)
-      await updateDoc(docRef, {
+      console.log("📋 Obteniendo pedidos del usuario:", userId)
+
+      const q = query(collection(db, "pedidos"), where("userId", "==", userId))
+
+      const querySnapshot = await getDocs(q)
+      const orders = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+      })) as Order[]
+
+      // Ordenar por fecha de creación en el cliente
+      orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+      console.log(`✅ ${orders.length} pedidos obtenidos`)
+      return orders
+    } catch (error) {
+      console.error("❌ Error obteniendo pedidos:", error)
+      throw error
+    }
+  },
+
+  async updateOrderStatus(orderId: string, status: Order["status"]): Promise<void> {
+    try {
+      console.log("📝 Actualizando estado del pedido:", { orderId, status })
+
+      const orderRef = doc(db, "pedidos", orderId)
+      await updateDoc(orderRef, {
         status,
         updatedAt: serverTimestamp(),
       })
-      console.log("🔄 Estado del pedido actualizado:", id, status)
+
+      console.log("✅ Estado del pedido actualizado")
     } catch (error) {
       console.error("❌ Error actualizando estado del pedido:", error)
       throw error
     }
   },
+
+  async updateOrder(orderId: string, orderData: Partial<Order>): Promise<void> {
+    try {
+      console.log("📝 Actualizando pedido:", { orderId, orderData })
+
+      const orderRef = doc(db, "pedidos", orderId)
+      await updateDoc(orderRef, {
+        ...orderData,
+        updatedAt: serverTimestamp(),
+      })
+
+      console.log("✅ Pedido actualizado")
+    } catch (error) {
+      console.error("❌ Error actualizando pedido:", error)
+      throw error
+    }
+  },
+
+  async deleteOrder(orderId: string): Promise<void> {
+    try {
+      console.log("🗑️ Eliminando pedido:", orderId)
+
+      const orderRef = doc(db, "pedidos", orderId)
+      await deleteDoc(orderRef)
+
+      console.log("✅ Pedido eliminado")
+    } catch (error) {
+      console.error("❌ Error eliminando pedido:", error)
+      throw error
+    }
+  },
 }
 
-// Cart Service (Legacy - for backward compatibility)
-export const cartService = {
-  getCart() {
-    if (typeof window !== "undefined") {
-      const cart = localStorage.getItem("servitec_cart")
-      return cart ? JSON.parse(cart) : []
-    }
-    return []
-  },
+// Servicio para lista de deseos (favoritos) - ARREGLADO
+export const listaDeseosService = {
+  async getUserWishlist(userId: string): Promise<string[]> {
+    try {
+      console.log("❤️ Obteniendo lista de deseos para usuario:", userId)
 
-  addToCart(product: Product) {
-    if (typeof window !== "undefined") {
-      const cart = this.getCart()
-      const existingItem = cart.find((item: any) => item.id === product.id)
+      const wishlistRef = doc(db, "lista-de-deseos", userId)
+      const wishlistDoc = await getDoc(wishlistRef)
 
-      if (existingItem) {
-        existingItem.quantity += 1
+      if (wishlistDoc.exists()) {
+        const productos = wishlistDoc.data().productos || []
+        console.log("✅ Lista de deseos encontrada:", productos.length, "productos")
+        return productos
       } else {
-        cart.push({ ...product, quantity: 1 })
+        console.log("📭 No se encontró lista de deseos, creando una nueva...")
+        return []
+      }
+    } catch (error) {
+      console.error("❌ Error obteniendo lista de deseos:", error)
+      throw error
+    }
+  },
+
+  async addToWishlist(userId: string, productId: string): Promise<void> {
+    try {
+      console.log("➕ Agregando a lista de deseos:", { userId, productId })
+
+      const wishlistRef = doc(db, "lista-de-deseos", userId)
+      const wishlistDoc = await getDoc(wishlistRef)
+
+      let productos: string[] = []
+      if (wishlistDoc.exists()) {
+        productos = wishlistDoc.data().productos || []
       }
 
-      localStorage.setItem("servitec_cart", JSON.stringify(cart))
-    }
-  },
+      // Verificar si el producto ya está en la lista
+      if (!productos.includes(productId)) {
+        productos.push(productId)
 
-  removeFromCart(productId: string) {
-    if (typeof window !== "undefined") {
-      const cart = this.getCart()
-      const updatedCart = cart.filter((item: any) => item.id !== productId)
-      localStorage.setItem("servitec_cart", JSON.stringify(updatedCart))
-    }
-  },
+        await setDoc(
+          wishlistRef,
+          {
+            userId,
+            productos,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        )
 
-  updateQuantity(productId: string, quantity: number) {
-    if (typeof window !== "undefined") {
-      const cart = this.getCart()
-      const item = cart.find((item: any) => item.id === productId)
-
-      if (item) {
-        if (quantity <= 0) {
-          this.removeFromCart(productId)
-        } else {
-          item.quantity = quantity
-          localStorage.setItem("servitec_cart", JSON.stringify(cart))
-        }
+        console.log("✅ Producto agregado a lista de deseos")
+      } else {
+        console.log("ℹ️ Producto ya está en la lista de deseos")
       }
+    } catch (error) {
+      console.error("❌ Error agregando a lista de deseos:", error)
+      throw error
     }
   },
 
-  clearCart() {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("servitec_cart")
+  async removeFromWishlist(userId: string, productId: string): Promise<void> {
+    try {
+      console.log("🗑️ Eliminando de lista de deseos:", { userId, productId })
+
+      const wishlistRef = doc(db, "lista-de-deseos", userId)
+      const wishlistDoc = await getDoc(wishlistRef)
+
+      if (wishlistDoc.exists()) {
+        const productos = wishlistDoc.data().productos || []
+        const updatedProductos = productos.filter((id: string) => id !== productId)
+
+        await setDoc(
+          wishlistRef,
+          {
+            userId,
+            productos: updatedProductos,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        )
+
+        console.log("✅ Producto eliminado de lista de deseos")
+      }
+    } catch (error) {
+      console.error("❌ Error eliminando de lista de deseos:", error)
+      throw error
     }
   },
 
-  getCartTotal() {
-    const cart = this.getCart()
-    return cart.reduce((total: number, item: any) => total + item.price * item.quantity, 0)
-  },
+  async updateWishlist(userId: string, productos: string[]): Promise<void> {
+    try {
+      console.log("📝 Actualizando lista de deseos:", { userId, productos })
 
-  getCartItemsCount() {
-    const cart = this.getCart()
-    return cart.reduce((count: number, item: any) => count + item.quantity, 0)
+      const wishlistRef = doc(db, "lista-de-deseos", userId)
+      await setDoc(
+        wishlistRef,
+        {
+          userId,
+          productos,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      )
+
+      console.log("✅ Lista de deseos actualizada")
+    } catch (error) {
+      console.error("❌ Error actualizando lista de deseos:", error)
+      throw error
+    }
   },
 }

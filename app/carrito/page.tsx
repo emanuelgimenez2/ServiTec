@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard } from "lucide-react"
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, CreditCard, DollarSign, Building2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { onAuthStateChanged } from "firebase/auth"
@@ -18,6 +19,9 @@ export default function CarritoPage() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("")
+  const [processingOrder, setProcessingOrder] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -126,11 +130,17 @@ export default function CarritoPage() {
     }
   }
 
-  const handleCheckout = async () => {
+  const handlePaymentMethodSelect = (method: string) => {
+    setSelectedPaymentMethod(method)
+    processOrder(method)
+  }
+
+  const processOrder = async (paymentMethod: string) => {
     if (!user || !cart) return
 
     try {
-      console.log("💳 Procesando checkout")
+      setProcessingOrder(true)
+      console.log("💳 Procesando pedido con método:", paymentMethod)
 
       // Crear el pedido
       const orderData = {
@@ -145,10 +155,10 @@ export default function CarritoPage() {
           quantity: item.quantity,
           image: item.image,
         })),
-        total: total,
+        total: cart.total,
         status: "pending" as const,
-        shippingAddress: "Dirección no especificada",
-        paymentMethod: "Pendiente",
+        shippingAddress: "Retiro en local - Balbín y Baldoni",
+        paymentMethod: paymentMethod,
       }
 
       // Crear pedido en Firebase
@@ -159,8 +169,10 @@ export default function CarritoPage() {
 
       toast({
         title: "¡Compra realizada!",
-        description: "Tu pedido ha sido procesado exitosamente",
+        description: `Tu pedido ha sido procesado exitosamente. Método de pago: ${paymentMethod}`,
       })
+
+      setShowPaymentModal(false)
 
       // Crear nuevo carrito activo
       await carritoService.createUserCart(user.uid)
@@ -172,6 +184,8 @@ export default function CarritoPage() {
         description: "No se pudo procesar el pedido",
         variant: "destructive",
       })
+    } finally {
+      setProcessingOrder(false)
     }
   }
 
@@ -367,8 +381,9 @@ export default function CarritoPage() {
                   </div>
                 </div>
 
+                {/* Botón de proceder al pago */}
                 <Button
-                  onClick={handleCheckout}
+                  onClick={() => setShowPaymentModal(true)}
                   className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3"
                   size="lg"
                 >
@@ -388,6 +403,60 @@ export default function CarritoPage() {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="w-[95vw] max-w-md bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20">
+          <DialogHeader className="pb-4 border-b border-white/20">
+            <DialogTitle className="text-xl font-bold text-white text-center">Selecciona tu forma de pago</DialogTitle>
+            <DialogDescription className="text-sm text-white/70 text-center">
+              Total: ${total.toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-6 space-y-4">
+            {/* Opciones de pago */}
+            <div className="space-y-3">
+              <Button
+                onClick={() => handlePaymentMethodSelect("Efectivo")}
+                disabled={processingOrder}
+                className="w-full h-16 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold text-lg"
+              >
+                <DollarSign className="mr-3 h-6 w-6" />
+                Efectivo
+              </Button>
+
+              <Button
+                onClick={() => handlePaymentMethodSelect("Transferencia")}
+                disabled={processingOrder}
+                className="w-full h-16 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-lg"
+              >
+                <CreditCard className="mr-3 h-6 w-6" />
+                Transferencia
+              </Button>
+            </div>
+
+            {/* Información de retiro */}
+            <div className="mt-6 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+              <div className="flex items-center space-x-2 text-blue-200 mb-2">
+                <Building2 className="h-5 w-5" />
+                <span className="font-semibold">Retiro en local</span>
+              </div>
+              <p className="text-sm text-white/80">
+                <strong>Dirección:</strong> Balbín y Baldoni
+              </p>
+              <p className="text-xs text-white/60 mt-2">Te contactaremos para coordinar el horario de retiro</p>
+            </div>
+
+            {processingOrder && (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mr-3"></div>
+                <span className="text-white">Procesando pedido...</span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -75,7 +75,12 @@ export default function AdminOrders() {
       setLoading(true)
       // Cargar desde Firebase
       const ordersData = await pedidosService.getAllOrders()
-      setOrders(ordersData)
+      // Validar que cada order tenga total
+      const validatedOrders = ordersData.map((order) => ({
+        ...order,
+        total: order.total || 0,
+      }))
+      setOrders(validatedOrders)
     } catch (error) {
       console.error("Error loading orders from Firebase:", error)
       // Fallback a localStorage
@@ -92,9 +97,9 @@ export default function AdminOrders() {
     if (searchTerm) {
       filtered = filtered.filter(
         (order) =>
-          order.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.userEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.id.toLowerCase().includes(searchTerm.toLowerCase()),
+          order.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.userEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.id?.toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
@@ -233,7 +238,7 @@ export default function AdminOrders() {
     shipped: orders.filter((o) => o.status === "shipped").length,
     delivered: orders.filter((o) => o.status === "delivered").length,
     cancelled: orders.filter((o) => o.status === "cancelled").length,
-    totalRevenue: orders.reduce((sum, order) => sum + order.total, 0),
+    totalRevenue: orders.reduce((sum, order) => sum + (order.total || 0), 0),
   }
 
   if (loading) {
@@ -390,8 +395,10 @@ export default function AdminOrders() {
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h3 className="font-semibold text-white text-xs line-clamp-1">{order.userName}</h3>
-                          <p className="text-white/70 text-xs">#{order.id.slice(-8)}</p>
+                          <h3 className="font-semibold text-white text-xs line-clamp-1">
+                            {order.userName || "Usuario"}
+                          </h3>
+                          <p className="text-white/70 text-xs">#{order.id?.slice(-8) || "N/A"}</p>
                         </div>
                         {getStatusBadge(order.status)}
                       </div>
@@ -399,11 +406,11 @@ export default function AdminOrders() {
                       <div className="space-y-1 text-xs">
                         <div className="flex items-center text-white/80">
                           <DollarSign className="w-3 h-3 mr-1" />
-                          <span className="font-bold text-green-400">${order.total.toLocaleString()}</span>
+                          <span className="font-bold text-green-400">${(order.total || 0).toLocaleString()}</span>
                         </div>
                         <div className="flex items-center text-white/80">
                           <Package className="w-3 h-3 mr-1" />
-                          <span>{order.items.length} productos</span>
+                          <span>{order.items?.length || 0} productos</span>
                         </div>
                         <div className="text-white/70">{new Date(order.createdAt).toLocaleDateString("es-AR")}</div>
                       </div>
@@ -422,7 +429,7 @@ export default function AdminOrders() {
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle>Pedido #{selectedOrder?.id.slice(-8)}</DialogTitle>
+                              <DialogTitle>Pedido #{selectedOrder?.id?.slice(-8) || "N/A"}</DialogTitle>
                               <DialogDescription>Detalles completos del pedido</DialogDescription>
                             </DialogHeader>
 
@@ -431,15 +438,15 @@ export default function AdminOrders() {
                                 <div className="grid gap-4 md:grid-cols-2">
                                   <div>
                                     <Label className="text-sm font-medium">Cliente</Label>
-                                    <p className="text-sm">{selectedOrder.userName}</p>
+                                    <p className="text-sm">{selectedOrder.userName || "N/A"}</p>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium">Email</Label>
-                                    <p className="text-sm">{selectedOrder.userEmail}</p>
+                                    <p className="text-sm">{selectedOrder.userEmail || "N/A"}</p>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium">Teléfono</Label>
-                                    <p className="text-sm">{selectedOrder.userPhone}</p>
+                                    <p className="text-sm">{selectedOrder.userPhone || "N/A"}</p>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium">Estado</Label>
@@ -449,13 +456,13 @@ export default function AdminOrders() {
 
                                 <div>
                                   <Label className="text-sm font-medium">Dirección de envío</Label>
-                                  <p className="text-sm">{selectedOrder.shippingAddress}</p>
+                                  <p className="text-sm">{selectedOrder.shippingAddress || "N/A"}</p>
                                 </div>
 
                                 <div>
                                   <Label className="text-sm font-medium">Productos</Label>
                                   <div className="mt-2 space-y-2">
-                                    {selectedOrder.items.map((item) => (
+                                    {selectedOrder.items?.map((item) => (
                                       <div
                                         key={item.id}
                                         className="flex items-center justify-between p-2 bg-gray-50 rounded"
@@ -472,17 +479,17 @@ export default function AdminOrders() {
                                           </div>
                                         </div>
                                         <p className="text-sm font-bold">
-                                          ${(item.price * item.quantity).toLocaleString()}
+                                          ${((item.price || 0) * (item.quantity || 0)).toLocaleString()}
                                         </p>
                                       </div>
-                                    ))}
+                                    )) || <p className="text-sm text-gray-500">No hay productos</p>}
                                   </div>
                                 </div>
 
                                 <div className="flex justify-between items-center pt-2 border-t">
                                   <span className="font-medium">Total:</span>
                                   <span className="text-lg font-bold text-green-600">
-                                    ${selectedOrder.total.toLocaleString()}
+                                    ${(selectedOrder.total || 0).toLocaleString()}
                                   </span>
                                 </div>
                               </div>
@@ -536,7 +543,7 @@ export default function AdminOrders() {
                         <div className="flex items-center gap-2 flex-wrap">
                           {getStatusBadge(order.status)}
                           <Badge variant="outline" className="text-white/80 border-white/30">
-                            #{order.id.slice(-8)}
+                            #{order.id?.slice(-8) || "N/A"}
                           </Badge>
                           <span className="text-sm text-white/70">
                             {new Date(order.createdAt).toLocaleDateString("es-AR")}
@@ -546,16 +553,17 @@ export default function AdminOrders() {
                         <div className="grid gap-1 md:grid-cols-2">
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-white/70" />
-                            <span className="font-medium text-white">{order.userName}</span>
+                            <span className="font-medium text-white">{order.userName || "Usuario"}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4 text-white/70" />
-                            <span className="font-bold text-green-400">${order.total.toLocaleString()}</span>
+                            <span className="font-bold text-green-400">${(order.total || 0).toLocaleString()}</span>
                           </div>
                         </div>
 
                         <p className="text-sm text-white/70">
-                          {order.items.length} producto{order.items.length !== 1 ? "s" : ""} • {order.paymentMethod}
+                          {order.items?.length || 0} producto{(order.items?.length || 0) !== 1 ? "s" : ""} •{" "}
+                          {order.paymentMethod || "N/A"}
                         </p>
                       </div>
 
@@ -573,7 +581,7 @@ export default function AdminOrders() {
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle>Pedido #{selectedOrder?.id.slice(-8)}</DialogTitle>
+                              <DialogTitle>Pedido #{selectedOrder?.id?.slice(-8) || "N/A"}</DialogTitle>
                               <DialogDescription>Detalles completos del pedido</DialogDescription>
                             </DialogHeader>
 
@@ -582,15 +590,15 @@ export default function AdminOrders() {
                                 <div className="grid gap-4 md:grid-cols-2">
                                   <div>
                                     <Label className="text-sm font-medium">Cliente</Label>
-                                    <p className="text-sm">{selectedOrder.userName}</p>
+                                    <p className="text-sm">{selectedOrder.userName || "N/A"}</p>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium">Email</Label>
-                                    <p className="text-sm">{selectedOrder.userEmail}</p>
+                                    <p className="text-sm">{selectedOrder.userEmail || "N/A"}</p>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium">Teléfono</Label>
-                                    <p className="text-sm">{selectedOrder.userPhone}</p>
+                                    <p className="text-sm">{selectedOrder.userPhone || "N/A"}</p>
                                   </div>
                                   <div>
                                     <Label className="text-sm font-medium">Estado</Label>
@@ -600,13 +608,13 @@ export default function AdminOrders() {
 
                                 <div>
                                   <Label className="text-sm font-medium">Dirección de envío</Label>
-                                  <p className="text-sm">{selectedOrder.shippingAddress}</p>
+                                  <p className="text-sm">{selectedOrder.shippingAddress || "N/A"}</p>
                                 </div>
 
                                 <div>
                                   <Label className="text-sm font-medium">Productos</Label>
                                   <div className="mt-2 space-y-2">
-                                    {selectedOrder.items.map((item) => (
+                                    {selectedOrder.items?.map((item) => (
                                       <div
                                         key={item.id}
                                         className="flex items-center justify-between p-2 bg-gray-50 rounded"
@@ -623,17 +631,17 @@ export default function AdminOrders() {
                                           </div>
                                         </div>
                                         <p className="text-sm font-bold">
-                                          ${(item.price * item.quantity).toLocaleString()}
+                                          ${((item.price || 0) * (item.quantity || 0)).toLocaleString()}
                                         </p>
                                       </div>
-                                    ))}
+                                    )) || <p className="text-sm text-gray-500">No hay productos</p>}
                                   </div>
                                 </div>
 
                                 <div className="flex justify-between items-center pt-2 border-t">
                                   <span className="font-medium">Total:</span>
                                   <span className="text-lg font-bold text-green-600">
-                                    ${selectedOrder.total.toLocaleString()}
+                                    ${(selectedOrder.total || 0).toLocaleString()}
                                   </span>
                                 </div>
                               </div>

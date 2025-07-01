@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, ShoppingCart, User, Shield } from "lucide-react"
+import { Menu, X, ShoppingCart, User, Shield, Heart, Package } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "@/lib/firebase"
 import { signOut, syncAuthState } from "@/lib/auth-service"
+import { carritoService, listaDeseosService } from "@/lib/firebase-services"
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -18,6 +20,34 @@ export default function Navbar() {
   const [cartItems, setCartItems] = useState(0)
   const [wishlistItems, setWishlistItems] = useState(0)
   const [authLoading, setAuthLoading] = useState(true)
+
+  // Función para actualizar contadores desde Firebase
+  const updateCountersFromFirebase = async (userId) => {
+    try {
+      // Actualizar carrito
+      if (carritoService && carritoService.getUserCart) {
+        const userCart = await carritoService.getUserCart(userId)
+        if (userCart && userCart.items) {
+          const totalItems = userCart.items.reduce((sum, item) => sum + item.quantity, 0)
+          setCartItems(totalItems)
+          console.log("🛒 Cart items updated:", totalItems)
+        } else {
+          setCartItems(0)
+        }
+      }
+
+      // Actualizar favoritos
+      if (listaDeseosService && listaDeseosService.getUserWishlist) {
+        const favoriteIds = await listaDeseosService.getUserWishlist(userId)
+        setWishlistItems(favoriteIds.length)
+        console.log("❤️ Wishlist items updated:", favoriteIds.length)
+      }
+    } catch (error) {
+      console.error("Error updating counters:", error)
+      setCartItems(0)
+      setWishlistItems(0)
+    }
+  }
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,10 +62,8 @@ export default function Navbar() {
     // Escuchar cambios de autenticación de Firebase
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       console.log("🔥 Auth state changed:", firebaseUser?.email)
-
       // Sincronizar estado
       syncAuthState(firebaseUser)
-
       // Actualizar estado local
       updateUserFromStorage()
       setAuthLoading(false)
@@ -63,7 +91,6 @@ export default function Navbar() {
       const userData = localStorage.getItem("servitec_user")
       if (userData) {
         const user = JSON.parse(userData)
-
         // Get user's cart from carrito collection
         const carritoCollection = JSON.parse(localStorage.getItem("carrito") || "[]")
         const userCart = carritoCollection.find((c) => c.userId === user.id)
@@ -95,13 +122,26 @@ export default function Navbar() {
       updateCounts()
     }
 
+    // Escuchar eventos personalizados para actualizar contadores
+    const handleCartUpdate = () => {
+      updateCounts()
+    }
+
+    const handleWishlistUpdate = () => {
+      updateCounts()
+    }
+
     window.addEventListener("storage", handleStorageChange)
     window.addEventListener("userUpdated", handleStorageChange)
+    window.addEventListener("cartUpdated", handleCartUpdate)
+    window.addEventListener("wishlistUpdated", handleWishlistUpdate)
 
     return () => {
       window.removeEventListener("scroll", handleScroll)
       window.removeEventListener("storage", handleStorageChange)
       window.removeEventListener("userUpdated", handleStorageChange)
+      window.removeEventListener("cartUpdated", handleCartUpdate)
+      window.removeEventListener("wishlistUpdated", handleWishlistUpdate)
       unsubscribe()
     }
   }, [])
@@ -201,16 +241,20 @@ export default function Navbar() {
 
           {/* User Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            {/*<Link href="/wishlist">
-              <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative">
-                <Heart className="w-5 h-5" />
-                {wishlistItems > 0 && (
-                  <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center p-0">
-                    {wishlistItems}
-                  </Badge>
-                )
-              </Button>
-            </Link>*/}
+            {/* Favoritos */}
+            {user && (
+              <Link href="/favoritos">
+                <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative">
+                  <Heart className="w-5 h-5" />
+                  {wishlistItems > 0 && (
+                    <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center p-0">
+                      {wishlistItems}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+            )}
+
             <Link href="/carrito">
               <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative">
                 <ShoppingCart className="w-5 h-5" />
@@ -221,17 +265,31 @@ export default function Navbar() {
                 )}
               </Button>
             </Link>
+
             {user ? (
               <div className="relative group">
-                <Button variant="ghost" size="sm" className="text-white hover:text-violet-300">
-                  <User className="w-5 h-5 mr-1" />
-                  {user.name}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:text-violet-300 flex items-center space-x-2"
+                >
+                  <Avatar className="w-6 h-6">
+                    <AvatarImage src={user.photoURL || user.avatar || ""} alt={user.name || "Usuario"} />
+                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white text-xs">
+                      {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="hidden lg:inline">{user.name}</span>
                   {user.role === "administrador" && <Shield className="w-4 h-4 ml-1 text-yellow-400" />}
                 </Button>
+
                 <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
                   <div className="p-2">
                     <Link href="/perfil" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">
                       Mi Perfil
+                    </Link>
+                    <Link href="/mis-compras" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">
+                      Mis Compras
                     </Link>
                     <Link href="/mis-turnos" className="block px-4 py-2 text-gray-800 hover:bg-gray-100 rounded">
                       Mis Turnos
@@ -282,7 +340,6 @@ export default function Navbar() {
               >
                 Inicio
               </Link>
-
               {/* Servicios */}
               <div className="space-y-2">
                 <span className="block text-white font-medium">Servicios</span>
@@ -317,7 +374,6 @@ export default function Navbar() {
                   </Link>
                 </div>
               </div>
-
               <Link
                 href="/tienda"
                 className="block text-white hover:text-orange-400 transition-colors"
@@ -344,6 +400,20 @@ export default function Navbar() {
               <div className="border-t border-white/20 pt-4">
                 {/* Carrito y Usuario */}
                 <div className="space-y-3">
+                  {/* Favoritos en móvil */}
+                  {user && (
+                    <Link href="/favoritos" onClick={handleMobileNavClick}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-white hover:text-orange-400"
+                      >
+                        <Heart className="w-5 h-5 mr-2" />
+                        <span>Favoritos ({wishlistItems})</span>
+                      </Button>
+                    </Link>
+                  )}
+
                   <Link href="/carrito" onClick={handleMobileNavClick}>
                     <Button variant="ghost" size="sm" className="w-full justify-start text-white hover:text-orange-400">
                       <ShoppingCart className="w-5 h-5 mr-2" />
@@ -354,12 +424,17 @@ export default function Navbar() {
                   {user ? (
                     <div className="space-y-2">
                       <div className="flex items-center text-white">
-                        <User className="w-5 h-5 mr-2" />
+                        <Avatar className="w-6 h-6 mr-2">
+                          <AvatarImage src={user.photoURL || user.avatar || ""} alt={user.name || "Usuario"} />
+                          <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white text-xs">
+                            {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
                         <span>{user.name}</span>
                         {user.role === "administrador" && <Shield className="w-4 h-4 ml-2 text-yellow-400" />}
                       </div>
 
-                      <div className="pl-7 space-y-2">
+                      <div className="pl-8 space-y-2">
                         <Link href="/perfil" onClick={handleMobileNavClick}>
                           <Button
                             variant="ghost"
@@ -369,6 +444,18 @@ export default function Navbar() {
                             Mi Perfil
                           </Button>
                         </Link>
+
+                        <Link href="/mis-compras" onClick={handleMobileNavClick}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                          >
+                            <Package className="w-4 h-4 mr-2" />
+                            Mis Compras
+                          </Button>
+                        </Link>
+
                         <Link href="/mis-turnos" onClick={handleMobileNavClick}>
                           <Button
                             variant="ghost"
@@ -378,6 +465,7 @@ export default function Navbar() {
                             Mis Turnos
                           </Button>
                         </Link>
+
                         {user.role === "administrador" && (
                           <Link href="/admin" onClick={handleMobileNavClick}>
                             <Button
@@ -390,6 +478,7 @@ export default function Navbar() {
                             </Button>
                           </Link>
                         )}
+
                         <Button
                           onClick={() => {
                             handleSignOut()
