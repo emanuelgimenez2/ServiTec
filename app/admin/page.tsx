@@ -20,6 +20,8 @@ import {
   ShoppingCart,
   Menu,
   X,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -78,6 +80,7 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("dashboard")
+  const [showDashboard, setShowDashboard] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -533,37 +536,34 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-16">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Header Mejorado */}
-        <div className="mb-8">
-          <div className="bg-white/10 backdrop-blur-sm rounded-3xl p-4 sm:p-6 lg:p-8 border border-white/20 shadow-2xl">
+        <div className="mb-4 sm:mb-8">
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-6 lg:p-8 border border-white/20 shadow-2xl">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 lg:gap-6">
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl p-3 lg:p-4 shadow-lg">
-                  <Activity className="w-6 h-6 lg:w-10 lg:h-10 text-white" />
+              <div className="flex items-center gap-2 sm:gap-4 lg:gap-6">
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl sm:rounded-2xl p-2 sm:p-3 lg:p-4 shadow-lg">
+                  <Activity className="w-4 h-4 sm:w-6 sm:h-6 lg:w-10 lg:h-10 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white mb-1 lg:mb-2 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                  <h1 className="text-lg sm:text-2xl lg:text-5xl font-bold text-white mb-1 lg:mb-2 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
                     Panel de Administración
-                    <Zap className="inline-block w-6 h-6 lg:w-10 lg:h-10 ml-2 lg:ml-3 text-yellow-400 animate-pulse" />
+                    <Zap className="inline-block w-3 h-3 sm:w-6 sm:h-6 lg:w-10 lg:h-10 ml-1 sm:ml-2 lg:ml-3 text-yellow-400 animate-pulse" />
                   </h1>
-                  <p className="text-white/80 text-sm sm:text-base lg:text-xl">Bienvenido de vuelta, {user.name}</p>
-                  <div className="flex items-center mt-2 lg:mt-3 gap-2 lg:gap-4">
+                  <p className="text-white/80 text-xs sm:text-sm lg:text-xl">Bienvenido de vuelta, {user.name}</p>
+                  <div className="flex items-center mt-1 sm:mt-2 lg:mt-3 gap-1 sm:gap-2 lg:gap-4">
                     <div className="flex items-center gap-1 lg:gap-2">
-                      <Award className="w-4 h-4 lg:w-6 lg:h-6 text-yellow-400" />
-                      <span className="text-white/90 text-sm lg:text-lg">Administrador Principal</span>
+                      <Award className="w-3 h-3 sm:w-4 sm:h-4 lg:w-6 lg:h-6 text-yellow-400" />
+                      <span className="text-white/90 text-xs sm:text-sm lg:text-lg">Administrador Principal</span>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className="text-green-400 border-green-400 bg-green-400/10 text-xs lg:text-sm"
-                    >
-                      <CheckCircle className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                    <Badge variant="outline" className="text-green-400 border-green-400 bg-green-400/10 text-xs">
+                      <CheckCircle className="w-2 h-2 sm:w-3 sm:h-3 lg:w-4 lg:h-4 mr-1" />
                       Sistema Activo
                     </Badge>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 lg:gap-4">
+              <div className="flex items-center gap-1 sm:gap-2 lg:gap-4">
                 <Button
                   onClick={loadData}
                   disabled={isLoading}
@@ -571,11 +571,11 @@ export default function AdminPage() {
                   size="sm"
                 >
                   {isLoading ? (
-                    <RefreshCw className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2 animate-spin" />
+                    <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2 animate-spin" />
                   ) : (
-                    <RefreshCw className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                    <RefreshCw className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
                   )}
-                  <span className="hidden sm:inline">Actualizar</span>
+                  <span className="hidden sm:inline text-xs sm:text-sm">Actualizar</span>
                 </Button>
                 <Button
                   onClick={runFirebaseTest}
@@ -583,7 +583,7 @@ export default function AdminPage() {
                   size="sm"
                 >
                   <TestTube className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
-                  Probar Firebase
+                  <span className="text-xs sm:text-sm">Probar Firebase</span>
                 </Button>
               </div>
             </div>
@@ -591,66 +591,70 @@ export default function AdminPage() {
         </div>
 
         {/* Stats Cards Mejoradas */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8 mb-8 lg:mb-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-8 mb-4 sm:mb-8 lg:mb-12">
           <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
-              <CardTitle className="text-sm lg:text-lg font-medium opacity-90">Total Usuarios</CardTitle>
-              <div className="bg-white/20 rounded-full p-2 lg:p-3">
-                <Users className="h-4 w-4 lg:h-6 lg:w-6" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 lg:pb-3">
+              <CardTitle className="text-xs sm:text-sm lg:text-lg font-medium opacity-90">Total Usuarios</CardTitle>
+              <div className="bg-white/20 rounded-full p-1 sm:p-2 lg:p-3">
+                <Users className="h-3 w-3 sm:h-4 sm:w-4 lg:h-6 lg:w-6" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalUsers}</div>
+            <CardContent className="p-2 sm:p-4 lg:p-6 pt-0">
+              <div className="text-lg sm:text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalUsers}</div>
               <div className="flex items-center">
-                <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
                 <p className="text-xs lg:text-sm opacity-90">+{stats.monthlyGrowth}% este mes</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-green-500 to-green-600 border-0 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
-              <CardTitle className="text-sm lg:text-lg font-medium opacity-90">Servicios Realizados</CardTitle>
-              <div className="bg-white/20 rounded-full p-2 lg:p-3">
-                <FileText className="h-4 w-4 lg:h-6 lg:w-6" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 lg:pb-3">
+              <CardTitle className="text-xs sm:text-sm lg:text-lg font-medium opacity-90">
+                Servicios Realizados
+              </CardTitle>
+              <div className="bg-white/20 rounded-full p-1 sm:p-2 lg:p-3">
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4 lg:h-6 lg:w-6" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalServices}</div>
+            <CardContent className="p-2 sm:p-4 lg:p-6 pt-0">
+              <div className="text-lg sm:text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalServices}</div>
               <div className="flex items-center">
-                <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
                 <p className="text-xs lg:text-sm opacity-90">Servicios completados</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
-              <CardTitle className="text-sm lg:text-lg font-medium opacity-90">Productos</CardTitle>
-              <div className="bg-white/20 rounded-full p-2 lg:p-3">
-                <Package className="h-4 w-4 lg:h-6 lg:w-6" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 lg:pb-3">
+              <CardTitle className="text-xs sm:text-sm lg:text-lg font-medium opacity-90">Productos</CardTitle>
+              <div className="bg-white/20 rounded-full p-1 sm:p-2 lg:p-3">
+                <Package className="h-3 w-3 sm:h-4 sm:w-4 lg:h-6 lg:w-6" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalProducts}</div>
+            <CardContent className="p-2 sm:p-4 lg:p-6 pt-0">
+              <div className="text-lg sm:text-2xl lg:text-4xl font-bold mb-1 lg:mb-2">{stats.totalProducts}</div>
               <div className="flex items-center">
-                <Package className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                <Package className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
                 <p className="text-xs lg:text-sm opacity-90">En inventario</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-orange-500 to-red-500 border-0 text-white shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
-              <CardTitle className="text-sm lg:text-lg font-medium opacity-90">Ingresos Totales</CardTitle>
-              <div className="bg-white/20 rounded-full p-2 lg:p-3">
-                <DollarSign className="h-4 w-4 lg:h-6 lg:w-6" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 lg:pb-3">
+              <CardTitle className="text-xs sm:text-sm lg:text-lg font-medium opacity-90">Ingresos Totales</CardTitle>
+              <div className="bg-white/20 rounded-full p-1 sm:p-2 lg:p-3">
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 lg:h-6 lg:w-6" />
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-xl lg:text-4xl font-bold mb-1 lg:mb-2">{formatPrice(stats.totalRevenue)}</div>
+            <CardContent className="p-2 sm:p-4 lg:p-6 pt-0">
+              <div className="text-sm sm:text-xl lg:text-4xl font-bold mb-1 lg:mb-2">
+                {formatPrice(stats.totalRevenue)}
+              </div>
               <div className="flex items-center">
-                <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
+                <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 mr-1 lg:mr-2" />
                 <p className="text-xs lg:text-sm opacity-90">Ingresos totales</p>
               </div>
             </CardContent>
@@ -658,21 +662,42 @@ export default function AdminPage() {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="lg:hidden mb-6">
+        <div className="lg:hidden mb-4 sm:mb-6">
           <Button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+            className="w-full bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 h-10 text-sm"
           >
-            {isMobileMenuOpen ? <X className="w-5 h-5 mr-2" /> : <Menu className="w-5 h-5 mr-2" />}
+            {isMobileMenuOpen ? <X className="w-4 h-4 mr-2" /> : <Menu className="w-4 h-4 mr-2" />}
             {isMobileMenuOpen ? "Cerrar Menú" : "Abrir Menú de Navegación"}
           </Button>
         </div>
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden mb-6 bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-            <div className="grid grid-cols-2 gap-3">
-              {tabs.map((tab) => {
+          <div className="lg:hidden mb-4 sm:mb-6 bg-white/10 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
+            <div className="space-y-2">
+              {/* Dashboard con flecha */}
+              <div>
+                <Button
+                  onClick={() => setShowDashboard(!showDashboard)}
+                  variant="ghost"
+                  className="w-full justify-between text-white hover:bg-white/10 h-8 text-sm"
+                >
+                  <div className="flex items-center">
+                    <Activity className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </div>
+                  {showDashboard ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </Button>
+                {showDashboard && (
+                  <div className="ml-6 mt-2 p-2 bg-white/5 rounded-lg">
+                    <AdminDashboard />
+                  </div>
+                )}
+              </div>
+
+              {/* Otros tabs */}
+              {tabs.slice(1).map((tab) => {
                 const Icon = tab.icon
                 return (
                   <Button
@@ -682,14 +707,14 @@ export default function AdminPage() {
                       setIsMobileMenuOpen(false)
                     }}
                     variant={activeTab === tab.id ? "default" : "ghost"}
-                    className={`justify-start text-left ${
+                    className={`w-full justify-start text-left h-8 text-sm ${
                       activeTab === tab.id
                         ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white"
                         : "text-white hover:bg-white/10"
                     }`}
                   >
                     <Icon className="w-4 h-4 mr-2" />
-                    <span className="text-sm">{tab.label}</span>
+                    <span>{tab.label}</span>
                     {tab.id === "messages" && stats.unreadMessages > 0 && (
                       <Badge className="ml-auto bg-red-500 text-white text-xs">{stats.unreadMessages}</Badge>
                     )}
@@ -701,7 +726,7 @@ export default function AdminPage() {
         )}
 
         {/* Main Content con Tabs Mejoradas */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6 lg:space-y-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6 lg:space-y-8">
           <TabsList className="hidden lg:flex bg-white/10 backdrop-blur-sm border-white/20 p-2 rounded-2xl shadow-xl">
             {tabs.map((tab) => {
               const Icon = tab.icon
@@ -722,57 +747,57 @@ export default function AdminPage() {
           </TabsList>
 
           {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="min-h-[600px] lg:min-h-[800px]">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+          <TabsContent value="dashboard" className="min-h-[400px] sm:min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-8 border border-white/10 shadow-2xl">
               <AdminDashboard />
             </div>
           </TabsContent>
 
           {/* Productos Tab */}
-          <TabsContent value="products" className="min-h-[600px] lg:min-h-[800px]">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+          <TabsContent value="products" className="min-h-[400px] sm:min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-8 border border-white/10 shadow-2xl">
               <AdminProducts />
             </div>
           </TabsContent>
 
           {/* Turnos Tab */}
-          <TabsContent value="appointments" className="min-h-[600px] lg:min-h-[800px]">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+          <TabsContent value="appointments" className="min-h-[400px] sm:min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-8 border border-white/10 shadow-2xl">
               <AdminAppointments />
             </div>
           </TabsContent>
 
           {/* Pedidos Tab */}
-          <TabsContent value="orders" className="min-h-[600px] lg:min-h-[800px]">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+          <TabsContent value="orders" className="min-h-[400px] sm:min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-8 border border-white/10 shadow-2xl">
               <AdminOrders />
             </div>
           </TabsContent>
 
           {/* Usuarios Tab */}
-          <TabsContent value="users" className="min-h-[600px] lg:min-h-[800px]">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+          <TabsContent value="users" className="min-h-[400px] sm:min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-8 border border-white/10 shadow-2xl">
               <AdminUsers />
             </div>
           </TabsContent>
 
           {/* Mensajes Tab */}
-          <TabsContent value="messages" className="min-h-[600px] lg:min-h-[800px]">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+          <TabsContent value="messages" className="min-h-[400px] sm:min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-8 border border-white/10 shadow-2xl">
               <AdminMessages />
             </div>
           </TabsContent>
 
           {/* Contabilidad Tab */}
-          <TabsContent value="accounting" className="min-h-[600px] lg:min-h-[800px]">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+          <TabsContent value="accounting" className="min-h-[400px] sm:min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-8 border border-white/10 shadow-2xl">
               <AdminAccounting />
             </div>
           </TabsContent>
 
           {/* Analíticas Tab */}
-          <TabsContent value="analytics" className="min-h-[600px] lg:min-h-[800px]">
-            <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-4 lg:p-8 border border-white/10 shadow-2xl">
+          <TabsContent value="analytics" className="min-h-[400px] sm:min-h-[600px] lg:min-h-[800px]">
+            <div className="bg-white/5 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-3 sm:p-4 lg:p-8 border border-white/10 shadow-2xl">
               <AdminAnalytics />
             </div>
           </TabsContent>

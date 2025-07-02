@@ -3,38 +3,69 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useToast } from "@/hooks/use-toast"
-import { Users, Search, Plus, Edit, Trash2, Mail, Phone, Calendar, RefreshCw, ChevronRight } from "lucide-react"
+import {
+  Users,
+  Mail,
+  Calendar,
+  Edit,
+  Eye,
+  UserCheck,
+  UserX,
+  Plus,
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+} from "lucide-react"
 import { usuarioService, type Usuario } from "@/lib/firebase-services"
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 
-export default function UsersComponent() {
+export default function AdminUsers() {
   const [users, setUsers] = useState<Usuario[]>([])
-  const [loading, setLoading] = useState(true)
+  const [filteredUsers, setFilteredUsers] = useState<Usuario[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [filterRole, setFilterRole] = useState<string>("all")
+  const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [selectedUser, setSelectedUser] = useState<Usuario | null>(null)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
+  const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
-  const [showAllUsers, setShowAllUsers] = useState(false)
+  const [showDashboard, setShowDashboard] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    role: "user",
+    role: "usuario",
   })
 
   useEffect(() => {
     loadUsers()
   }, [])
+
+  useEffect(() => {
+    filterUsers()
+  }, [users, searchTerm, filterRole, filterStatus])
 
   const loadUsers = async () => {
     try {
@@ -66,6 +97,30 @@ export default function UsersComponent() {
     }
   }
 
+  const filterUsers = () => {
+    let filtered = users
+
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (user) =>
+          user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.phone?.includes(searchTerm),
+      )
+    }
+
+    if (filterRole !== "all") {
+      filtered = filtered.filter((user) => user.role === filterRole)
+    }
+
+    if (filterStatus !== "all") {
+      filtered = filtered.filter((user) => (filterStatus === "active" ? user.isActive : !user.isActive))
+    }
+
+    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    setFilteredUsers(filtered)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -86,7 +141,7 @@ export default function UsersComponent() {
 
       setIsDialogOpen(false)
       setEditingUser(null)
-      setFormData({ name: "", email: "", phone: "", role: "user" })
+      setFormData({ name: "", email: "", phone: "", role: "usuario" })
       await loadUsers()
     } catch (error) {
       console.error("Error saving user:", error)
@@ -119,6 +174,25 @@ export default function UsersComponent() {
     }
   }
 
+  const updateUserStatus = async (userId: string, isActive: boolean) => {
+    try {
+      await usuarioService.updateUserStatus(userId, isActive)
+      await loadUsers()
+
+      toast({
+        title: "Estado actualizado",
+        description: `Usuario ${isActive ? "activado" : "desactivado"}`,
+      })
+    } catch (error) {
+      console.error("Error updating user status:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del usuario",
+        variant: "destructive",
+      })
+    }
+  }
+
   const openEditDialog = (user: Usuario) => {
     setEditingUser(user)
     setFormData({
@@ -132,16 +206,9 @@ export default function UsersComponent() {
 
   const openCreateDialog = () => {
     setEditingUser(null)
-    setFormData({ name: "", email: "", phone: "", role: "user" })
+    setFormData({ name: "", email: "", phone: "", role: "usuario" })
     setIsDialogOpen(true)
   }
-
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone.includes(searchTerm),
-  )
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -173,194 +240,290 @@ export default function UsersComponent() {
     }
   }
 
+  const stats = {
+    total: users.length,
+    active: users.filter((u) => u.isActive).length,
+    inactive: users.filter((u) => !u.isActive).length,
+    admins: users.filter((u) => u.role === "administrador").length,
+    regularUsers: users.filter((u) => u.role === "usuario").length,
+  }
+
   if (loading) {
     return (
-      <div className="space-y-4 sm:space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Usuarios</h1>
-            <p className="text-white/70 text-sm sm:text-base">Gestiona los usuarios del sistema</p>
-          </div>
-          <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-white"></div>
-        </div>
-
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <Card key={i} className="bg-white/10 backdrop-blur-md border-white/20 animate-pulse">
-              <CardContent className="p-4 sm:p-6">
-                <div className="h-16 sm:h-20 bg-white/10 rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="space-y-6">
+        <div className="text-center py-8">
+          <p className="text-white/70">Cargando usuarios...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-      {/* Header */}
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-            Usuarios
-          </h1>
-          <p className="text-white/70 mt-1 sm:mt-2 text-sm sm:text-base">Gestiona los usuarios del sistema</p>
+          <h2 className="text-3xl font-bold tracking-tight text-white">Usuarios</h2>
+          <p className="text-white/70">Gestiona los usuarios del sistema</p>
         </div>
-        <div className="flex items-center space-x-2 sm:space-x-4">
+        <div className="flex items-center space-x-4">
           <Button onClick={loadUsers} variant="ghost" className="text-white hover:bg-white/10" size="sm">
-            <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Actualizar</span>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Actualizar
           </Button>
           <Button
             onClick={openCreateDialog}
             className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
             size="sm"
           >
-            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Nuevo Usuario</span>
-            <span className="sm:hidden">+</span>
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Usuario
           </Button>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 h-4 w-4" />
-        <Input
-          placeholder="Buscar usuarios..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50"
-        />
+      {/* Dashboard desplegable */}
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white">Dashboard de Usuarios</CardTitle>
+            <Button
+              variant="ghost"
+              onClick={() => setShowDashboard(!showDashboard)}
+              className="text-white hover:bg-white/10"
+            >
+              {showDashboard ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
+          </div>
+        </CardHeader>
+        {showDashboard && (
+          <CardContent>
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-white">{stats.total}</p>
+                    <p className="text-sm text-white/70">Total Usuarios</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-400">{stats.active}</p>
+                    <p className="text-sm text-white/70">Activos</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-red-400">{stats.admins}</p>
+                    <p className="text-sm text-white/70">Admins</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-400">{filteredUsers.length}</p>
+                    <p className="text-sm text-white/70">Filtrados</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Filtros en modal */}
+      <div className="flex justify-end">
+        <Dialog open={showFilters} onOpenChange={setShowFilters}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Filtros de Búsqueda</DialogTitle>
+              <DialogDescription>Filtra los usuarios del sistema</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="search">Buscar</Label>
+                <Input
+                  id="search"
+                  placeholder="Nombre, email, teléfono..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Rol</Label>
+                <Select value={filterRole} onValueChange={setFilterRole}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los roles" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los roles</SelectItem>
+                    <SelectItem value="usuario">Usuario</SelectItem>
+                    <SelectItem value="administrador">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="active">Activos</SelectItem>
+                    <SelectItem value="inactive">Inactivos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Users Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card className="bg-white/10 backdrop-blur-md border-white/20">
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-center">
-              <p className="text-xl sm:text-2xl font-bold text-white">{users.length}</p>
-              <p className="text-xs sm:text-sm text-white/70">Total Usuarios</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/10 backdrop-blur-md border-white/20">
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-center">
-              <p className="text-xl sm:text-2xl font-bold text-green-400">
-                {users.filter((u) => u.role === "usuario" || u.role === "user").length}
-              </p>
-              <p className="text-xs sm:text-sm text-white/70">Usuarios</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/10 backdrop-blur-md border-white/20">
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-center">
-              <p className="text-xl sm:text-2xl font-bold text-red-400">
-                {users.filter((u) => u.role === "administrador" || u.role === "admin").length}
-              </p>
-              <p className="text-xs sm:text-sm text-white/70">Admins</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/10 backdrop-blur-md border-white/20">
-          <CardContent className="p-3 sm:p-4">
-            <div className="text-center">
-              <p className="text-xl sm:text-2xl font-bold text-blue-400">{filteredUsers.length}</p>
-              <p className="text-xs sm:text-sm text-white/70">Filtrados</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Users List */}
-      <Card className="bg-white/10 backdrop-blur-md border-white/20">
-        <CardContent className="p-4 sm:p-6">
+      {/* Lista de usuarios */}
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white">Usuarios ({filteredUsers.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
           {filteredUsers.length > 0 ? (
             <div className="space-y-4">
-              {/* Header para mostrar/ocultar todos */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">Usuarios ({filteredUsers.length})</h3>
-                {filteredUsers.length > 5 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAllUsers(!showAllUsers)}
-                    className="text-white/70 hover:text-white text-xs sm:text-sm"
-                  >
-                    {showAllUsers ? "Ver menos" : "Ver todos"}
-                    <ChevronRight className={`ml-1 h-3 w-3 transition-transform ${showAllUsers ? "rotate-90" : ""}`} />
-                  </Button>
-                )}
-              </div>
-
-              {/* Lista de usuarios */}
-              <div className="space-y-3">
-                {filteredUsers.slice(0, showAllUsers ? filteredUsers.length : 5).map((user) => (
-                  <Card
-                    key={user.id}
-                    className="bg-white/5 backdrop-blur-md border-white/10 hover:bg-white/10 transition-all duration-300"
-                  >
-                    <CardContent className="p-3 sm:p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 flex-1 min-w-0">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Users className="h-5 w-5 text-white" />
+              {filteredUsers.map((user) => (
+                <Card
+                  key={user.id}
+                  className="bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 transition-all duration-300"
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 flex-1 min-w-0">
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
+                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
+                            {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <h3 className="font-semibold text-white truncate">{user.name}</h3>
+                            <Badge className={getRoleColor(user.role)}>{getRoleText(user.role)}</Badge>
+                            <Badge className={user.isActive ? "bg-green-500" : "bg-red-500"}>
+                              {user.isActive ? "Activo" : "Inactivo"}
+                            </Badge>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <h3 className="font-semibold text-white text-sm sm:text-base truncate">{user.name}</h3>
-                              <Badge className={getRoleColor(user.role)}>{getRoleText(user.role)}</Badge>
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2 text-sm text-white/70">
+                              <Mail className="h-4 w-4" />
+                              <span className="truncate">{user.email}</span>
                             </div>
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2 text-xs sm:text-sm text-white/70">
-                                <Mail className="h-3 w-3 flex-shrink-0" />
-                                <span className="truncate">{user.email}</span>
-                              </div>
-                              <div className="flex items-center space-x-2 text-xs sm:text-sm text-white/70">
-                                <Phone className="h-3 w-3 flex-shrink-0" />
-                                <span>{user.phone}</span>
-                              </div>
-                              <div className="flex items-center space-x-2 text-xs text-white/50">
-                                <Calendar className="h-3 w-3 flex-shrink-0" />
-                                <span>{new Date(user.createdAt).toLocaleDateString()}</span>
-                              </div>
+                            <div className="flex items-center space-x-2 text-sm text-white/70">
+                              <Calendar className="h-4 w-4" />
+                              <span>{new Date(user.createdAt).toLocaleDateString()}</span>
                             </div>
                           </div>
-                        </div>
-
-                        <div className="flex items-center space-x-2 ml-4">
-                          <Button
-                            onClick={() => openEditDialog(user)}
-                            size="sm"
-                            variant="ghost"
-                            className="text-blue-400 hover:bg-blue-500/10 p-2"
-                          >
-                            <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => deleteUser(user.id!)}
-                            disabled={updating === user.id}
-                            size="sm"
-                            variant="ghost"
-                            className="text-red-400 hover:bg-red-500/10 p-2"
-                          >
-                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                          </Button>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+
+                      <div className="flex items-center space-x-2 ml-4">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedUser(user)}
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Detalles del Usuario</DialogTitle>
+                            </DialogHeader>
+                            {selectedUser && (
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-4">
+                                  <Avatar className="h-16 w-16">
+                                    <AvatarImage
+                                      src={selectedUser.avatar || "/placeholder.svg"}
+                                      alt={selectedUser.name}
+                                    />
+                                    <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white text-lg">
+                                      {selectedUser.name?.charAt(0) || selectedUser.email?.charAt(0) || "U"}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <h3 className="text-lg font-semibold">{selectedUser.name}</h3>
+                                    <div className="flex gap-2 mt-1">
+                                      <Badge className={getRoleColor(selectedUser.role)}>
+                                        {getRoleText(selectedUser.role)}
+                                      </Badge>
+                                      <Badge className={selectedUser.isActive ? "bg-green-500" : "bg-red-500"}>
+                                        {selectedUser.isActive ? "Activo" : "Inactivo"}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                  <div>
+                                    <Label className="text-sm font-medium">Email</Label>
+                                    <p className="text-sm">{selectedUser.email}</p>
+                                  </div>
+                                  {selectedUser.phone && (
+                                    <div>
+                                      <Label className="text-sm font-medium">Teléfono</Label>
+                                      <p className="text-sm">{selectedUser.phone}</p>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <Label className="text-sm font-medium">Fecha de registro</Label>
+                                    <p className="text-sm">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        <Button
+                          onClick={() => openEditDialog(user)}
+                          size="sm"
+                          variant="outline"
+                          className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          onClick={() => updateUserStatus(user.id!, !user.isActive)}
+                          size="sm"
+                          className={user.isActive ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"}
+                        >
+                          {user.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           ) : (
-            <div className="text-center py-8 sm:py-12">
-              <Users className="h-12 w-12 sm:h-16 sm:w-16 text-white/30 mx-auto mb-4" />
-              <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No hay usuarios</h3>
-              <p className="text-white/60 text-sm sm:text-base">
+            <div className="text-center py-12">
+              <Users className="h-16 w-16 text-white/30 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">No hay usuarios</h3>
+              <p className="text-white/60">
                 {searchTerm
                   ? "No se encontraron usuarios con el término de búsqueda"
                   : "Aún no hay usuarios registrados en el sistema"}
@@ -378,77 +541,59 @@ export default function UsersComponent() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-gray-900 border-white/20">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-white">{editingUser ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
-            <DialogDescription className="text-white/70">
+            <DialogTitle>{editingUser ? "Editar Usuario" : "Crear Nuevo Usuario"}</DialogTitle>
+            <DialogDescription>
               {editingUser ? "Modifica los datos del usuario" : "Completa los datos para crear un nuevo usuario"}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-white">
-                Nombre completo
-              </Label>
+              <Label htmlFor="name">Nombre completo</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                 placeholder="Ingresa el nombre completo"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">
-                Email
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                 placeholder="usuario@ejemplo.com"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-white">
-                Teléfono
-              </Label>
+              <Label htmlFor="phone">Teléfono</Label>
               <Input
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
                 placeholder="+57 300 123 4567"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role" className="text-white">
-                Rol
-              </Label>
-              <select
-                id="role"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full p-2 bg-white/10 border border-white/20 rounded-md text-white"
-                required
-              >
-                <option value="usuario">Usuario</option>
-                <option value="manager">Gerente</option>
-                <option value="administrador">Administrador</option>
-              </select>
+              <Label htmlFor="role">Rol</Label>
+              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="usuario">Usuario</SelectItem>
+                  <SelectItem value="administrador">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                type="button"
-                onClick={() => setIsDialogOpen(false)}
-                variant="ghost"
-                className="text-white hover:bg-white/10"
-              >
+              <Button type="button" onClick={() => setIsDialogOpen(false)} variant="outline">
                 Cancelar
               </Button>
               <Button

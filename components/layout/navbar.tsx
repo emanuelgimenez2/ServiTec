@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Menu, X, ShoppingCart, User, Shield, Heart, Package } from 'lucide-react'
+import { Menu, X, ShoppingCart, User, Shield, Heart, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -170,18 +170,18 @@ export default function Navbar() {
     return (
       <nav className={navbarClasses}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-14 sm:h-16">
             <Link href="/" className="flex items-center space-x-2">
               <Image
                 src="/placeholder.svg?height=40&width=40"
                 alt="ServiTec Logo"
                 width={40}
                 height={40}
-                className="w-10 h-10"
+                className="w-8 h-8 sm:w-10 sm:h-10"
               />
-              <span className="text-xl font-bold text-white">ServiTec</span>
+              <span className="text-lg sm:text-xl font-bold text-white">ServiTec</span>
             </Link>
-            <div className="text-white">Cargando...</div>
+            <div className="text-white text-sm">Cargando...</div>
           </div>
         </div>
       </nav>
@@ -190,16 +190,16 @@ export default function Navbar() {
 
   return (
     <nav className={navbarClasses}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <Image src="logo.png" alt="ServiTec Logo" width={40} height={40} className="w-10 h-10" />
-            <span className="text-xl font-bold text-white">ServiTec</span>
+            <Image src="logo.png" alt="ServiTec Logo" width={40} height={40} className="w-8 h-8 sm:w-10 sm:h-10" />
+            <span className="text-lg sm:text-xl font-bold text-white">ServiTec</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
             <Link href="/" className="text-white hover:text-orange-400 transition-colors">
               Inicio
             </Link>
@@ -240,28 +240,34 @@ export default function Navbar() {
           </div>
 
           {/* User Actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3 lg:space-x-4">
             {/* Favoritos */}
             {user && (
               <Link href="/favoritos">
-                <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative">
+                <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative p-2">
                   <Heart className="w-5 h-5" />
                   {wishlistItems > 0 && (
-                    <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center p-0">
-                      {wishlistItems}
-                    </Badge>
+                    <>
+                      <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center p-0 border-2 border-white">
+                        {wishlistItems > 9 ? "9+" : wishlistItems}
+                      </Badge>
+                      <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                    </>
                   )}
                 </Button>
               </Link>
             )}
 
             <Link href="/carrito">
-              <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative">
+              <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 relative p-2">
                 <ShoppingCart className="w-5 h-5" />
                 {cartItems > 0 && (
-                  <Badge className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center p-0">
-                    {cartItems}
-                  </Badge>
+                  <>
+                    <Badge className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center p-0 border-2 border-white">
+                      {cartItems > 9 ? "9+" : cartItems}
+                    </Badge>
+                    <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                  </>
                 )}
               </Button>
             </Link>
@@ -271,7 +277,7 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-white hover:text-violet-300 flex items-center space-x-2"
+                  className="text-white hover:text-violet-300 flex items-center space-x-2 p-2"
                 >
                   <Avatar className="w-6 h-6">
                     <AvatarImage src={user.photoURL || user.avatar || ""} alt={user.name || "Usuario"} />
@@ -279,7 +285,7 @@ export default function Navbar() {
                       {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden lg:inline">{user.name}</span>
+                  <span className="hidden lg:inline text-sm">{user.name}</span>
                   {user.role === "administrador" && <Shield className="w-4 h-4 ml-1 text-yellow-400" />}
                 </Button>
 
@@ -313,9 +319,9 @@ export default function Navbar() {
               </div>
             ) : (
               <Link href="/auth">
-                <Button variant="ghost" size="sm" className="text-white hover:text-violet-300">
+                <Button variant="ghost" size="sm" className="text-white hover:text-violet-300 p-2">
                   <User className="w-5 h-5 mr-1" />
-                  Ingresar
+                  <span className="hidden lg:inline">Ingresar</span>
                 </Button>
               </Link>
             )}
@@ -323,51 +329,51 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <div className="md:hidden">
-            <Button variant="ghost" size="sm" onClick={() => setIsOpen(!isOpen)} className="text-white">
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            <Button variant="ghost" size="sm" onClick={() => setIsOpen(!isOpen)} className="text-white p-2">
+              {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden bg-gray-900/95 backdrop-blur-sm rounded-lg mt-2 p-4">
-            <div className="space-y-4">
+          <div className="md:hidden bg-gradient-to-r from-gray-900 via-purple-900 to-blue-900 backdrop-blur-sm rounded-lg mt-2 p-3 border border-white/10">
+            <div className="space-y-3">
               <Link
                 href="/"
-                className="block text-white hover:text-orange-400 transition-colors"
+                className="block text-white hover:text-orange-400 transition-colors text-sm"
                 onClick={handleMobileNavClick}
               >
                 Inicio
               </Link>
               {/* Servicios */}
               <div className="space-y-2">
-                <span className="block text-white font-medium">Servicios</span>
-                <div className="pl-4 space-y-2">
+                <span className="block text-white font-medium text-sm">Servicios</span>
+                <div className="pl-3 space-y-1">
                   <Link
                     href="/servicios/reparacion"
-                    className="block text-white/80 hover:text-orange-400 transition-colors text-sm"
+                    className="block text-white/80 hover:text-orange-400 transition-colors text-xs"
                     onClick={handleMobileNavClick}
                   >
                     Reparación de Computadoras
                   </Link>
                   <Link
                     href="/servicios/starlink"
-                    className="block text-white/80 hover:text-orange-400 transition-colors text-sm"
+                    className="block text-white/80 hover:text-orange-400 transition-colors text-xs"
                     onClick={handleMobileNavClick}
                   >
                     Instalación Starlink
                   </Link>
                   <Link
                     href="/servicios/camaras"
-                    className="block text-white/80 hover:text-orange-400 transition-colors text-sm"
+                    className="block text-white/80 hover:text-orange-400 transition-colors text-xs"
                     onClick={handleMobileNavClick}
                   >
                     Instalación de Cámaras
                   </Link>
                   <Link
                     href="/servicios/desarrollo"
-                    className="block text-white/80 hover:text-orange-400 transition-colors text-sm"
+                    className="block text-white/80 hover:text-orange-400 transition-colors text-xs"
                     onClick={handleMobileNavClick}
                   >
                     Desarrollo Web
@@ -376,70 +382,80 @@ export default function Navbar() {
               </div>
               <Link
                 href="/tienda"
-                className="block text-white hover:text-orange-400 transition-colors"
+                className="block text-white hover:text-orange-400 transition-colors text-sm"
                 onClick={handleMobileNavClick}
               >
                 Tienda
               </Link>
               <Link
                 href="/turnos"
-                className="block text-white hover:text-orange-400 transition-colors"
+                className="block text-white hover:text-orange-400 transition-colors text-sm"
                 onClick={handleMobileNavClick}
               >
                 Turnos
               </Link>
               <Link
                 href="/contacto"
-                className="block text-white hover:text-orange-400 transition-colors"
+                className="block text-white hover:text-orange-400 transition-colors text-sm"
                 onClick={handleMobileNavClick}
               >
                 Contacto
               </Link>
 
               {/* Separador */}
-              <div className="border-t border-white/20 pt-4">
+              <div className="border-t border-white/20 pt-3">
                 {/* Carrito y Usuario */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {/* Favoritos en móvil */}
                   {user && (
                     <Link href="/favoritos" onClick={handleMobileNavClick}>
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full justify-start text-white hover:text-orange-400"
+                        className="w-full justify-start text-white hover:text-orange-400 relative p-2 h-8"
                       >
-                        <Heart className="w-5 h-5 mr-2" />
-                        <span>Favoritos ({wishlistItems})</span>
+                        <Heart className="w-4 h-4 mr-2" />
+                        <span className="text-sm">Favoritos ({wishlistItems})</span>
+                        {wishlistItems > 0 && (
+                          <div className="absolute left-5 top-0.5 w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                        )}
                       </Button>
                     </Link>
                   )}
 
                   <Link href="/carrito" onClick={handleMobileNavClick}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start text-white hover:text-orange-400">
-                      <ShoppingCart className="w-5 h-5 mr-2" />
-                      <span>Carrito ({cartItems})</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-white hover:text-orange-400 relative p-2 h-8"
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-2" />
+                      <span className="text-sm">Carrito ({cartItems})</span>
+                      {cartItems > 0 && (
+                        <div className="absolute left-5 top-0.5 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                      )}
                     </Button>
                   </Link>
 
                   {user ? (
                     <div className="space-y-2">
-                      <div className="flex items-center text-white">
-                        <Avatar className="w-6 h-6 mr-2">
+                      <div className="flex items-center text-white p-2">
+                        <Avatar className="w-5 h-5 mr-2">
                           <AvatarImage src={user.photoURL || user.avatar || ""} alt={user.name || "Usuario"} />
                           <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white text-xs">
                             {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
                           </AvatarFallback>
                         </Avatar>
-                        <span>{user.name}</span>
-                        {user.role === "administrador" && <Shield className="w-4 h-4 ml-2 text-yellow-400" />}
+                        <span className="text-sm">{user.name}</span>
+                        {user.role === "administrador" && <Shield className="w-3 h-3 ml-2 text-yellow-400" />}
                       </div>
 
-                      <div className="pl-8 space-y-2">
+                      <div className="pl-6 space-y-1">
                         <Link href="/perfil" onClick={handleMobileNavClick}>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                            className="w-full justify-start text-white/80 hover:text-orange-400 text-xs p-1 h-7"
                           >
                             Mi Perfil
                           </Button>
@@ -449,9 +465,9 @@ export default function Navbar() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                            className="w-full justify-start text-white/80 hover:text-orange-400 text-xs p-1 h-7"
                           >
-                            <Package className="w-4 h-4 mr-2" />
+                            <Package className="w-3 h-3 mr-2" />
                             Mis Compras
                           </Button>
                         </Link>
@@ -460,7 +476,7 @@ export default function Navbar() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                            className="w-full justify-start text-white/80 hover:text-orange-400 text-xs p-1 h-7"
                           >
                             Mis Turnos
                           </Button>
@@ -471,9 +487,9 @@ export default function Navbar() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                              className="w-full justify-start text-white/80 hover:text-orange-400 text-xs p-1 h-7"
                             >
-                              <Shield className="w-4 h-4 mr-2 text-yellow-600" />
+                              <Shield className="w-3 h-3 mr-2 text-yellow-600" />
                               Panel Admin
                             </Button>
                           </Link>
@@ -486,7 +502,7 @@ export default function Navbar() {
                           }}
                           variant="ghost"
                           size="sm"
-                          className="w-full justify-start text-white/80 hover:text-orange-400 text-sm"
+                          className="w-full justify-start text-white/80 hover:text-orange-400 text-xs p-1 h-7"
                         >
                           Cerrar Sesión
                         </Button>
@@ -497,10 +513,10 @@ export default function Navbar() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full justify-start text-white hover:text-orange-400"
+                        className="w-full justify-start text-white hover:text-orange-400 p-2 h-8"
                       >
-                        <User className="w-5 h-5 mr-2" />
-                        Ingresar
+                        <User className="w-4 h-4 mr-2" />
+                        <span className="text-sm">Ingresar</span>
                       </Button>
                     </Link>
                   )}

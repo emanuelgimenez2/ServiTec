@@ -17,7 +17,19 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { DollarSign, Plus, Trash2, TrendingUp, TrendingDown, Wrench, ShoppingBag, Edit } from "lucide-react"
+import {
+  DollarSign,
+  Plus,
+  Trash2,
+  TrendingUp,
+  TrendingDown,
+  Wrench,
+  ShoppingBag,
+  Edit,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+} from "lucide-react"
 import { servicioService, ventasService } from "@/lib/firebase-services"
 
 interface ServiceRecord {
@@ -54,6 +66,8 @@ export default function AdminAccounting() {
   const [isAddingRecord, setIsAddingRecord] = useState(false)
   const [editingRecord, setEditingRecord] = useState<AccountingRecord | null>(null)
   const [newRecord, setNewRecord] = useState<Partial<AccountingRecord>>({})
+  const [showDashboard, setShowDashboard] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -291,265 +305,319 @@ export default function AdminAccounting() {
           <h2 className="text-3xl font-bold tracking-tight text-white">Contabilidad</h2>
           <p className="text-white/70">Gestión de servicios y ventas</p>
         </div>
-        <Dialog open={isAddingRecord} onOpenChange={setIsAddingRecord}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar Registro
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Agregar Nuevo Registro</DialogTitle>
-              <DialogDescription>Registra un nuevo servicio o venta</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Tipo</Label>
-                  <Select
-                    value={newRecord.type || ""}
-                    onValueChange={(value) => setNewRecord({ ...newRecord, type: value as "service" | "sale" })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona el tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="service">Servicio</SelectItem>
-                      <SelectItem value="sale">Venta</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Cliente</Label>
-                  <Input
-                    placeholder="Nombre del cliente"
-                    value={newRecord.client || ""}
-                    onChange={(e) => setNewRecord({ ...newRecord, client: e.target.value })}
-                  />
-                </div>
-              </div>
+      </div>
 
-              {newRecord.type === "service" && (
-                <>
+      {/* Dashboard desplegable */}
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white">Dashboard Contable</CardTitle>
+            <Button
+              variant="ghost"
+              onClick={() => setShowDashboard(!showDashboard)}
+              className="text-white hover:bg-white/10"
+            >
+              {showDashboard ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
+          </div>
+        </CardHeader>
+        {showDashboard && (
+          <CardContent>
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-white/70">Ingresos Totales</p>
+                      <p className="text-lg lg:text-2xl font-bold text-green-400">{formatAmount(stats.totalRevenue)}</p>
+                    </div>
+                    <TrendingUp className="h-6 w-6 lg:h-8 lg:w-8 text-green-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-white/70">Servicios</p>
+                      <p className="text-sm lg:text-xl font-bold text-blue-400">
+                        {formatAmount(stats.servicesRevenue)}
+                      </p>
+                    </div>
+                    <Wrench className="h-5 w-5 lg:h-8 lg:w-8 text-blue-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-white/70">Ventas</p>
+                      <p className="text-sm lg:text-xl font-bold text-purple-400">{formatAmount(stats.salesRevenue)}</p>
+                    </div>
+                    <ShoppingBag className="h-5 w-5 lg:h-8 lg:w-8 text-purple-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-white/70">Pendientes</p>
+                      <p className="text-sm lg:text-xl font-bold text-orange-400">
+                        {formatAmount(stats.pendingAmount)}
+                      </p>
+                    </div>
+                    <TrendingDown className="h-5 w-5 lg:h-8 lg:w-8 text-orange-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Filtros y acciones */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Dialog open={isAddingRecord} onOpenChange={setIsAddingRecord}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Registro
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Agregar Nuevo Registro</DialogTitle>
+                <DialogDescription>Registra un nuevo servicio o venta</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Categoría</Label>
+                    <Label>Tipo</Label>
                     <Select
-                      value={(newRecord as ServiceRecord).category || ""}
-                      onValueChange={(value) =>
-                        setNewRecord({ ...newRecord, category: value as ServiceRecord["category"] })
-                      }
+                      value={newRecord.type || ""}
+                      onValueChange={(value) => setNewRecord({ ...newRecord, type: value as "service" | "sale" })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecciona la categoría" />
+                        <SelectValue placeholder="Selecciona el tipo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Reparación PC">Reparación PC</SelectItem>
-                        <SelectItem value="Starlink">Starlink</SelectItem>
-                        <SelectItem value="Cámaras">Cámaras</SelectItem>
-                        <SelectItem value="Desarrollo Web">Desarrollo Web</SelectItem>
+                        <SelectItem value="service">Servicio</SelectItem>
+                        <SelectItem value="sale">Venta</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Descripción</Label>
-                    <Textarea
-                      placeholder="Descripción del servicio"
-                      value={(newRecord as ServiceRecord).description || ""}
-                      onChange={(e) => setNewRecord({ ...newRecord, description: e.target.value })}
-                    />
-                  </div>
-                </>
-              )}
-
-              {newRecord.type === "sale" && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Producto</Label>
+                    <Label>Cliente</Label>
                     <Input
-                      placeholder="Nombre del producto"
-                      value={(newRecord as SaleRecord).productName || ""}
-                      onChange={(e) => setNewRecord({ ...newRecord, productName: e.target.value })}
+                      placeholder="Nombre del cliente"
+                      value={newRecord.client || ""}
+                      onChange={(e) => setNewRecord({ ...newRecord, client: e.target.value })}
                     />
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2">
+                </div>
+
+                {newRecord.type === "service" && (
+                  <>
                     <div className="space-y-2">
-                      <Label>Cantidad</Label>
-                      <Input
-                        type="number"
-                        placeholder="1"
-                        value={(newRecord as SaleRecord).quantity || ""}
-                        onChange={(e) => setNewRecord({ ...newRecord, quantity: Number.parseInt(e.target.value) || 0 })}
+                      <Label>Categoría</Label>
+                      <Select
+                        value={(newRecord as ServiceRecord).category || ""}
+                        onValueChange={(value) =>
+                          setNewRecord({ ...newRecord, category: value as ServiceRecord["category"] })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona la categoría" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Reparación PC">Reparación PC</SelectItem>
+                          <SelectItem value="Starlink">Starlink</SelectItem>
+                          <SelectItem value="Cámaras">Cámaras</SelectItem>
+                          <SelectItem value="Desarrollo Web">Desarrollo Web</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Descripción</Label>
+                      <Textarea
+                        placeholder="Descripción del servicio"
+                        value={(newRecord as ServiceRecord).description || ""}
+                        onChange={(e) => setNewRecord({ ...newRecord, description: e.target.value })}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Precio Unitario</Label>
+                      <Label>Teléfono del Cliente</Label>
                       <Input
-                        type="number"
-                        placeholder="0"
-                        value={(newRecord as SaleRecord).unitPrice || ""}
-                        onChange={(e) => {
-                          const unitPrice = Number.parseFloat(e.target.value) || 0
-                          const quantity = (newRecord as SaleRecord).quantity || 1
-                          setNewRecord({
-                            ...newRecord,
-                            unitPrice,
-                            amount: unitPrice * quantity,
-                          })
-                        }}
+                        placeholder="Teléfono del cliente"
+                        value={newRecord.clientPhone || ""}
+                        onChange={(e) => setNewRecord({ ...newRecord, clientPhone: e.target.value })}
                       />
                     </div>
+                    <div className="space-y-2">
+                      <Label>Notas</Label>
+                      <Textarea
+                        placeholder="Notas adicionales"
+                        value={newRecord.notes || ""}
+                        onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {newRecord.type === "sale" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Producto</Label>
+                      <Input
+                        placeholder="Nombre del producto"
+                        value={(newRecord as SaleRecord).productName || ""}
+                        onChange={(e) => setNewRecord({ ...newRecord, productName: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Cantidad</Label>
+                        <Input
+                          type="number"
+                          placeholder="1"
+                          value={(newRecord as SaleRecord).quantity || ""}
+                          onChange={(e) =>
+                            setNewRecord({ ...newRecord, quantity: Number.parseInt(e.target.value) || 0 })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Precio Unitario</Label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={(newRecord as SaleRecord).unitPrice || ""}
+                          onChange={(e) => {
+                            const unitPrice = Number.parseFloat(e.target.value) || 0
+                            const quantity = (newRecord as SaleRecord).quantity || 1
+                            setNewRecord({
+                              ...newRecord,
+                              unitPrice,
+                              amount: unitPrice * quantity,
+                            })
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Teléfono del Cliente</Label>
+                      <Input
+                        placeholder="Teléfono del cliente"
+                        value={newRecord.clientPhone || ""}
+                        onChange={(e) => setNewRecord({ ...newRecord, clientPhone: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Notas</Label>
+                      <Textarea
+                        placeholder="Notas adicionales"
+                        value={newRecord.notes || ""}
+                        onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Monto Total</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={newRecord.amount || ""}
+                      onChange={(e) => setNewRecord({ ...newRecord, amount: Number.parseFloat(e.target.value) || 0 })}
+                      disabled={newRecord.type === "sale"}
+                    />
                   </div>
-                </>
-              )}
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Monto Total</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={newRecord.amount || ""}
-                    onChange={(e) => setNewRecord({ ...newRecord, amount: Number.parseFloat(e.target.value) || 0 })}
-                    disabled={newRecord.type === "sale"}
-                  />
+                  <div className="space-y-2">
+                    <Label>Fecha</Label>
+                    <Input
+                      type="date"
+                      value={newRecord.date || ""}
+                      onChange={(e) => setNewRecord({ ...newRecord, date: e.target.value })}
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Fecha</Label>
-                  <Input
-                    type="date"
-                    value={newRecord.date || ""}
-                    onChange={(e) => setNewRecord({ ...newRecord, date: e.target.value })}
-                  />
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsAddingRecord(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={addRecord}>Agregar Registro</Button>
                 </div>
               </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <div className="flex justify-end">
+          <Dialog open={showFilters} onOpenChange={setShowFilters}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Filtros de Búsqueda</DialogTitle>
+                <DialogDescription>Filtra los registros contables</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="search">Buscar</Label>
+                  <Input
+                    id="search"
+                    placeholder="Cliente, descripción, producto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
 
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsAddingRecord(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={addRecord}>Agregar Registro</Button>
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
+                  <Select value={filterType} onValueChange={setFilterType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos los tipos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los tipos</SelectItem>
+                      <SelectItem value="service">Servicios</SelectItem>
+                      <SelectItem value="sale">Ventas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Estado</Label>
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos los estados" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los estados</SelectItem>
+                      <SelectItem value="completed">Completado</SelectItem>
+                      <SelectItem value="pending">Pendiente</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                      <SelectItem value="refunded">Reembolsado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
-
-      {/* Estadísticas - Responsive */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-6">
-        <Card className="col-span-2 bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Ingresos Totales</p>
-                <p className="text-lg lg:text-2xl font-bold text-green-400">{formatAmount(stats.totalRevenue)}</p>
-              </div>
-              <TrendingUp className="h-6 w-6 lg:h-8 lg:w-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Servicios</p>
-                <p className="text-sm lg:text-xl font-bold text-blue-400">{formatAmount(stats.servicesRevenue)}</p>
-              </div>
-              <Wrench className="h-5 w-5 lg:h-8 lg:w-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Ventas</p>
-                <p className="text-sm lg:text-xl font-bold text-purple-400">{formatAmount(stats.salesRevenue)}</p>
-              </div>
-              <ShoppingBag className="h-5 w-5 lg:h-8 lg:w-8 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Total Servicios</p>
-                <p className="text-lg lg:text-2xl font-bold text-white">{stats.totalServices}</p>
-              </div>
-              <Wrench className="h-5 w-5 lg:h-8 lg:w-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Pendientes</p>
-                <p className="text-sm lg:text-xl font-bold text-orange-400">{formatAmount(stats.pendingAmount)}</p>
-              </div>
-              <TrendingDown className="h-5 w-5 lg:h-8 lg:w-8 text-orange-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros */}
-      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-        <CardHeader>
-          <CardTitle className="text-white">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="search" className="text-white/90">
-                Buscar
-              </Label>
-              <Input
-                id="search"
-                placeholder="Cliente, descripción, producto..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-white/90">Tipo</Label>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                  <SelectValue placeholder="Todos los tipos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los tipos</SelectItem>
-                  <SelectItem value="service">Servicios</SelectItem>
-                  <SelectItem value="sale">Ventas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-white/90">Estado</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                  <SelectValue placeholder="Todos los estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="completed">Completado</SelectItem>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                  <SelectItem value="refunded">Reembolsado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Lista de registros - Compacta para móvil */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">

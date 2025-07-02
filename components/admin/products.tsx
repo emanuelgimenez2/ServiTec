@@ -17,7 +17,19 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { Package, Plus, Edit, Trash2, AlertTriangle, CheckCircle, Upload, X, Eye, ImageIcon } from "lucide-react"
+import {
+  Package,
+  Plus,
+  Edit,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  Upload,
+  X,
+  Eye,
+  ImageIcon,
+  RefreshCw,
+} from "lucide-react"
 import { productosService, type Product } from "@/lib/firebase-services"
 
 export default function AdminProductsFixed() {
@@ -40,6 +52,8 @@ export default function AdminProductsFixed() {
   const editFileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
+  const [showDashboard, setShowDashboard] = useState(true)
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     loadProducts()
@@ -544,263 +558,262 @@ export default function AdminProductsFixed() {
           <h2 className="text-3xl font-bold tracking-tight text-white">Productos</h2>
           <p className="text-white/70">Gestión del inventario de productos</p>
         </div>
+      </div>
 
-        <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Agregar Producto
-            </Button>
-          </DialogTrigger>
+      {/* Dashboard desplegable */}
+      <div className="flex items-center justify-between">
+        <Button
+          onClick={() => setShowDashboard(!showDashboard)}
+          variant="outline"
+          className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+        >
+          {showDashboard ? "Ocultar Dashboard" : "Mostrar Dashboard"}
+        </Button>
+      </div>
 
-          <DialogContent className="w-[95vw] max-w-[400px] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-3 border-b">
-              <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                ✨ Agregar Producto
-              </DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm text-gray-600">
-                Completa la información del producto
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-3">
-              {/* Información básica */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 sm:p-4 rounded-lg border border-blue-200">
-                <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-3 flex items-center">
-                  <Package className="h-4 w-4 mr-2 text-blue-600" />
-                  Información Básica
-                </h3>
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
-                      <span className="text-red-500 mr-1">*</span>
-                      Nombre
-                    </Label>
-                    <Input
-                      placeholder="Ej: iPhone 15 Pro Max"
-                      value={newProduct.name || ""}
-                      onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                      className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300 focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
-                      <span className="text-red-500 mr-1">*</span>
-                      Categoría
-                    </Label>
-                    <Select
-                      value={newProduct.category || ""}
-                      onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
-                    >
-                      <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300">
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Notebooks">📱 Notebooks</SelectItem>
-                        <SelectItem value="Celulares">📱 Celulares</SelectItem>
-                        <SelectItem value="Parlantes">🔊 Parlantes</SelectItem>
-                        <SelectItem value="Streaming">📺 Streaming</SelectItem>
-                        <SelectItem value="Smart Home">🏠 Smart Home</SelectItem>
-                        <SelectItem value="Accesorios">🔌 Accesorios</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+      {showDashboard && (
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/70">Total</p>
+                  <p className="text-lg lg:text-2xl font-bold text-white">{stats.total}</p>
                 </div>
-
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 mt-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs sm:text-sm font-medium text-gray-700">Marca</Label>
-                    <Input
-                      placeholder="Ej: Apple, Samsung"
-                      value={newProduct.brand || ""}
-                      onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
-                      className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs sm:text-sm font-medium text-gray-700">Descripción</Label>
-                    <Textarea
-                      placeholder="Descripción del producto..."
-                      value={newProduct.description || ""}
-                      onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                      rows={2}
-                      className="text-xs sm:text-sm border-gray-300 resize-none"
-                    />
-                  </div>
-                </div>
+                <Package className="h-6 w-6 lg:h-8 lg:w-8 text-blue-400" />
               </div>
-
-              {/* Precios y stock */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-lg border border-green-200">
-                <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-3 flex items-center">
-                  <span className="text-lg mr-2">💰</span>
-                  Precios y Stock
-                </h3>
-                <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
-                      <span className="text-red-500 mr-1">*</span>
-                      Precio
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
-                        $
-                      </span>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        min="0"
-                        step="0.01"
-                        value={newProduct.price || ""}
-                        onChange={(e) =>
-                          setNewProduct({ ...newProduct, price: Number.parseFloat(e.target.value) || 0 })
-                        }
-                        className="h-8 sm:h-10 pl-6 text-xs sm:text-sm border-gray-300"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs sm:text-sm font-medium text-gray-700">Precio Original</Label>
-                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
-                        $
-                      </span>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        min="0"
-                        step="0.01"
-                        value={newProduct.originalPrice || ""}
-                        onChange={(e) =>
-                          setNewProduct({ ...newProduct, originalPrice: Number.parseFloat(e.target.value) || 0 })
-                        }
-                        className="h-8 sm:h-10 pl-6 text-xs sm:text-sm border-gray-300"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs sm:text-sm font-medium text-gray-700">Stock</Label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      min="0"
-                      value={newProduct.stock || ""}
-                      onChange={(e) => setNewProduct({ ...newProduct, stock: Number.parseInt(e.target.value) || 0 })}
-                      className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300"
-                    />
-                  </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/70">Activos</p>
+                  <p className="text-lg lg:text-2xl font-bold text-green-400">{stats.active}</p>
                 </div>
+                <CheckCircle className="h-6 w-6 lg:h-8 lg:w-8 text-green-400" />
               </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/70">Inactivos</p>
+                  <p className="text-lg lg:text-2xl font-bold text-red-400">{stats.inactive}</p>
+                </div>
+                <Package className="h-6 w-6 lg:h-8 lg:w-8 text-red-400" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/70">Stock Bajo</p>
+                  <p className="text-lg lg:text-2xl font-bold text-orange-400">{stats.lowStock}</p>
+                </div>
+                <AlertTriangle className="h-6 w-6 lg:h-8 lg:w-8 text-orange-400" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium text-white/70">Valor Total</p>
+                  <p className="text-sm lg:text-xl font-bold text-purple-400">${stats.totalValue.toLocaleString()}</p>
+                </div>
+                <Package className="h-6 w-6 lg:h-8 lg:w-8 text-purple-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
-              {/* Imágenes */}
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-lg border border-purple-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center">
-                    <ImageIcon className="h-4 w-4 mr-2 text-purple-600" />
-                    Imágenes
+      {/* Filtros y acciones */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h3 className="text-xl font-bold text-white">Gestión de Productos</h3>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            variant="outline"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-sm"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            {showFilters ? "Ocultar Filtros" : "Mostrar Filtros"}
+          </Button>
+
+          <Dialog open={isAddingProduct} onOpenChange={setIsAddingProduct}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Producto
+              </Button>
+            </DialogTrigger>
+            {/* Mantener todo el contenido del modal de agregar producto igual */}
+            <DialogContent className="w-[95vw] max-w-[400px] sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader className="pb-3 border-b">
+                <DialogTitle className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  ✨ Agregar Producto
+                </DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm text-gray-600">
+                  Completa la información del producto
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-3">
+                {/* Información básica */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 sm:p-4 rounded-lg border border-blue-200">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-3 flex items-center">
+                    <Package className="h-4 w-4 mr-2 text-blue-600" />
+                    Información Básica
                   </h3>
-                  <div className="flex gap-1 sm:gap-2">
-                    <Button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      size="sm"
-                      variant="outline"
-                      disabled={uploadingImage}
-                      className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
-                    >
-                      <Upload className="h-3 w-3 mr-1" />
-                      {uploadingImage ? "..." : "Subir"}
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => addImageUrl(false)}
-                      size="sm"
-                      variant="outline"
-                      className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      URL
-                    </Button>
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+                        <span className="text-red-500 mr-1">*</span>
+                        Nombre
+                      </Label>
+                      <Input
+                        placeholder="Ej: iPhone 15 Pro Max"
+                        value={newProduct.name || ""}
+                        onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                        className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300 focus:border-blue-500"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+                        <span className="text-red-500 mr-1">*</span>
+                        Categoría
+                      </Label>
+                      <Select
+                        value={newProduct.category || ""}
+                        onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
+                      >
+                        <SelectTrigger className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300">
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Notebooks">📱 Notebooks</SelectItem>
+                          <SelectItem value="Celulares">📱 Celulares</SelectItem>
+                          <SelectItem value="Parlantes">🔊 Parlantes</SelectItem>
+                          <SelectItem value="Streaming">📺 Streaming</SelectItem>
+                          <SelectItem value="Smart Home">🏠 Smart Home</SelectItem>
+                          <SelectItem value="Accesorios">🔌 Accesorios</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 mt-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm font-medium text-gray-700">Marca</Label>
+                      <Input
+                        placeholder="Ej: Apple, Samsung"
+                        value={newProduct.brand || ""}
+                        onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
+                        className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm font-medium text-gray-700">Descripción</Label>
+                      <Textarea
+                        placeholder="Descripción del producto..."
+                        value={newProduct.description || ""}
+                        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                        rows={2}
+                        className="text-xs sm:text-sm border-gray-300 resize-none"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, false)}
-                  className="hidden"
-                />
-
-                {productImages.length > 0 && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {productImages.map((image, index) => (
-                      <div key={index} className="space-y-1">
-                        <div className="relative aspect-square bg-gray-100 rounded-md border overflow-hidden">
-                          {image ? (
-                            <img
-                              src={image.startsWith("data:") ? image : image || "/placeholder.svg"}
-                              alt={`Producto ${index + 1}`}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.src = "/placeholder.svg?height=200&width=300"
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon className="h-6 w-6 text-gray-400" />
-                            </div>
-                          )}
-                          <Button
-                            type="button"
-                            onClick={() => removeImageUrl(index, false)}
-                            size="sm"
-                            variant="destructive"
-                            className="absolute top-1 right-1 h-5 w-5 p-0 rounded-full"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                          {index === 0 && (
-                            <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded">
-                              Principal
-                            </div>
-                          )}
-                        </div>
-                        {!image.startsWith("data:") && (
-                          <Input
-                            placeholder="https://ejemplo.com/imagen.jpg"
-                            value={image}
-                            onChange={(e) => updateImageUrl(index, e.target.value, false)}
-                            className="text-xs border-purple-300"
-                          />
-                        )}
-                        {image.startsWith("data:") && (
-                          <div className="text-xs text-green-700 bg-green-100 p-1 rounded border border-green-300">
-                            ✅ Procesada ({((image.length * 3) / 4 / 1024).toFixed(2)} KB)
-                          </div>
-                        )}
+                {/* Precios y stock */}
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-lg border border-green-200">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-3 flex items-center">
+                    <span className="text-lg mr-2">💰</span>
+                    Precios y Stock
+                  </h3>
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm font-medium text-gray-700 flex items-center">
+                        <span className="text-red-500 mr-1">*</span>
+                        Precio
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                          $
+                        </span>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                          value={newProduct.price || ""}
+                          onChange={(e) =>
+                            setNewProduct({ ...newProduct, price: Number.parseFloat(e.target.value) || 0 })
+                          }
+                          className="h-8 sm:h-10 pl-6 text-xs sm:text-sm border-gray-300"
+                        />
                       </div>
-                    ))}
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm font-medium text-gray-700">Precio Original</Label>
+                      <div className="relative">
+                        <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
+                          $
+                        </span>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                          value={newProduct.originalPrice || ""}
+                          onChange={(e) =>
+                            setNewProduct({ ...newProduct, originalPrice: Number.parseFloat(e.target.value) || 0 })
+                          }
+                          className="h-8 sm:h-10 pl-6 text-xs sm:text-sm border-gray-300"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm font-medium text-gray-700">Stock</Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        min="0"
+                        value={newProduct.stock || ""}
+                        onChange={(e) => setNewProduct({ ...newProduct, stock: Number.parseInt(e.target.value) || 0 })}
+                        className="h-8 sm:h-10 text-xs sm:text-sm border-gray-300"
+                      />
+                    </div>
                   </div>
-                )}
+                </div>
 
-                {productImages.length === 0 && (
-                  <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 text-center bg-white/50">
-                    <ImageIcon className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-                    <p className="text-xs text-gray-600 mb-2">Sube archivos o agrega URLs</p>
-                    <div className="flex gap-2 justify-center">
+                {/* Imágenes */}
+                <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center">
+                      <ImageIcon className="h-4 w-4 mr-2 text-purple-600" />
+                      Imágenes
+                    </h3>
+                    <div className="flex gap-1 sm:gap-2">
                       <Button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
+                        size="sm"
                         variant="outline"
+                        disabled={uploadingImage}
                         className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
                       >
                         <Upload className="h-3 w-3 mr-1" />
-                        Subir
+                        {uploadingImage ? "..." : "Subir"}
                       </Button>
                       <Button
                         type="button"
                         onClick={() => addImageUrl(false)}
+                        size="sm"
                         variant="outline"
                         className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
                       >
@@ -809,199 +822,234 @@ export default function AdminProductsFixed() {
                       </Button>
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Especificaciones */}
-              <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 sm:p-4 rounded-lg border border-orange-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center">
-                    <span className="text-lg mr-2">⚙️</span>
-                    Especificaciones
-                  </h3>
-                  <Button
-                    type="button"
-                    onClick={() => addSpecification(false)}
-                    size="sm"
-                    variant="outline"
-                    className="border-orange-300 text-orange-700 hover:bg-orange-100 text-xs h-7 px-2"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Agregar
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {specifications.map((spec, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-white rounded border border-orange-200"
-                    >
-                      <Input
-                        placeholder="Característica"
-                        value={spec.key}
-                        onChange={(e) => updateSpecification(index, "key", e.target.value, false)}
-                        className="border-orange-300 text-xs h-7"
-                      />
-                      <div className="flex gap-1">
-                        <Input
-                          placeholder="Valor"
-                          value={spec.value}
-                          onChange={(e) => updateSpecification(index, "value", e.target.value, false)}
-                          className="border-orange-300 text-xs h-7"
-                        />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, false)}
+                    className="hidden"
+                  />
+
+                  {productImages.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {productImages.map((image, index) => (
+                        <div key={index} className="space-y-1">
+                          <div className="relative aspect-square bg-gray-100 rounded-md border overflow-hidden">
+                            {image ? (
+                              <img
+                                src={image.startsWith("data:") ? image : image || "/placeholder.svg"}
+                                alt={`Producto ${index + 1}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/placeholder.svg?height=200&width=300"
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ImageIcon className="h-6 w-6 text-gray-400" />
+                              </div>
+                            )}
+                            <Button
+                              type="button"
+                              onClick={() => removeImageUrl(index, false)}
+                              size="sm"
+                              variant="destructive"
+                              className="absolute top-1 right-1 h-5 w-5 p-0 rounded-full"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                            {index === 0 && (
+                              <div className="absolute bottom-1 left-1 bg-blue-600 text-white text-xs px-1 py-0.5 rounded">
+                                Principal
+                              </div>
+                            )}
+                          </div>
+                          {!image.startsWith("data:") && (
+                            <Input
+                              placeholder="https://ejemplo.com/imagen.jpg"
+                              value={image}
+                              onChange={(e) => updateImageUrl(index, e.target.value, false)}
+                              className="text-xs border-purple-300"
+                            />
+                          )}
+                          {image.startsWith("data:") && (
+                            <div className="text-xs text-green-700 bg-green-100 p-1 rounded border border-green-300">
+                              ✅ Procesada ({((image.length * 3) / 4 / 1024).toFixed(2)} KB)
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {productImages.length === 0 && (
+                    <div className="border-2 border-dashed border-purple-300 rounded-lg p-4 text-center bg-white/50">
+                      <ImageIcon className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+                      <p className="text-xs text-gray-600 mb-2">Sube archivos o agrega URLs</p>
+                      <div className="flex gap-2 justify-center">
                         <Button
                           type="button"
-                          onClick={() => removeSpecification(index, false)}
-                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
                           variant="outline"
-                          className="border-red-300 text-red-600 hover:bg-red-50 h-7 w-7 p-0"
+                          className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
                         >
-                          <X className="h-3 w-3" />
+                          <Upload className="h-3 w-3 mr-1" />
+                          Subir
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={() => addImageUrl(false)}
+                          variant="outline"
+                          className="border-purple-300 text-purple-700 hover:bg-purple-100 text-xs h-7 px-2"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          URL
                         </Button>
                       </div>
                     </div>
-                  ))}
+                  )}
+                </div>
+
+                {/* Especificaciones */}
+                <div className="bg-gradient-to-r from-orange-50 to-yellow-50 p-3 sm:p-4 rounded-lg border border-orange-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm sm:text-base font-semibold text-gray-800 flex items-center">
+                      <span className="text-lg mr-2">⚙️</span>
+                      Especificaciones
+                    </h3>
+                    <Button
+                      type="button"
+                      onClick={() => addSpecification(false)}
+                      size="sm"
+                      variant="outline"
+                      className="border-orange-300 text-orange-700 hover:bg-orange-100 text-xs h-7 px-2"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Agregar
+                    </Button>
+                  </div>
+                  <div className="space-y-2">
+                    {specifications.map((spec, index) => (
+                      <div
+                        key={index}
+                        className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-2 bg-white rounded border border-orange-200"
+                      >
+                        <Input
+                          placeholder="Característica"
+                          value={spec.key}
+                          onChange={(e) => updateSpecification(index, "key", e.target.value, false)}
+                          className="border-orange-300 text-xs h-7"
+                        />
+                        <div className="flex gap-1">
+                          <Input
+                            placeholder="Valor"
+                            value={spec.value}
+                            onChange={(e) => updateSpecification(index, "value", e.target.value, false)}
+                            className="border-orange-300 text-xs h-7"
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => removeSpecification(index, false)}
+                            size="sm"
+                            variant="outline"
+                            className="border-red-300 text-red-600 hover:bg-red-50 h-7 w-7 p-0"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddingProduct(false)
+                      resetForm()
+                    }}
+                    disabled={isSubmitting}
+                    className="px-3 text-xs h-8"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={addProduct}
+                    disabled={
+                      isSubmitting || !newProduct.name?.trim() || !newProduct.price || !newProduct.category?.trim()
+                    }
+                    className="px-3 text-xs h-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {isSubmitting ? "Agregando..." : "✨ Agregar"}
+                  </Button>
                 </div>
               </div>
+            </DialogContent>
+          </Dialog>
 
-              <div className="flex justify-end gap-2 pt-3 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsAddingProduct(false)
-                    resetForm()
-                  }}
-                  disabled={isSubmitting}
-                  className="px-3 text-xs h-8"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={addProduct}
-                  disabled={
-                    isSubmitting || !newProduct.name?.trim() || !newProduct.price || !newProduct.category?.trim()
-                  }
-                  className="px-3 text-xs h-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                >
-                  {isSubmitting ? "Agregando..." : "✨ Agregar"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+          <Button
+            onClick={loadProducts}
+            variant="outline"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-sm"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Actualizar
+          </Button>
+        </div>
       </div>
 
-      {/* Estadísticas - Responsive */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Total</p>
-                <p className="text-lg lg:text-2xl font-bold text-white">{stats.total}</p>
+      {showFilters && (
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20 mb-6">
+          <CardContent className="p-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="search" className="text-sm font-medium text-white">
+                  Buscar
+                </Label>
+                <Input
+                  id="search"
+                  placeholder="Nombre, descripción, categoría..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="h-9 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                />
               </div>
-              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-blue-400" />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-white">Categoría</Label>
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="h-9 text-sm bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Todas las categorías" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las categorías</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-white">Estado</Label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="h-9 text-sm bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="active">Activos</SelectItem>
+                    <SelectItem value="inactive">Inactivos</SelectItem>
+                    <SelectItem value="low_stock">Stock Bajo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Activos</p>
-                <p className="text-lg lg:text-2xl font-bold text-green-400">{stats.active}</p>
-              </div>
-              <CheckCircle className="h-6 w-6 lg:h-8 lg:w-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Inactivos</p>
-                <p className="text-lg lg:text-2xl font-bold text-red-400">{stats.inactive}</p>
-              </div>
-              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-red-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Stock Bajo</p>
-                <p className="text-lg lg:text-2xl font-bold text-orange-400">{stats.lowStock}</p>
-              </div>
-              <AlertTriangle className="h-6 w-6 lg:h-8 lg:w-8 text-orange-400" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Valor Total</p>
-                <p className="text-sm lg:text-xl font-bold text-purple-400">${stats.totalValue.toLocaleString()}</p>
-              </div>
-              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros */}
-      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-        <CardHeader>
-          <CardTitle className="text-white">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label htmlFor="search" className="text-white/90">
-                Buscar
-              </Label>
-              <Input
-                id="search"
-                placeholder="Nombre, descripción, categoría..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-white/90">Categoría</Label>
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                  <SelectValue placeholder="Todas las categorías" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas las categorías</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-white/90">Estado</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                  <SelectValue placeholder="Todos los estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="active">Activos</SelectItem>
-                  <SelectItem value="inactive">Inactivos</SelectItem>
-                  <SelectItem value="low_stock">Stock Bajo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      )}
 
       {/* Lista de productos - Responsive Grid */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
@@ -1031,7 +1079,7 @@ export default function AdminProductsFixed() {
                           className="object-cover w-full h-full"
                         />
                       </div>
-                     <div className="space-y-1">
+                      <div className="space-y-1">
                         <h3 className="font-semibold text-xs text-white">{product.name}</h3>
                         <p className="text-white/70 text-xs">${product.price.toLocaleString()}</p>
                         <div className="flex flex-col text-xs space-y-0.5">

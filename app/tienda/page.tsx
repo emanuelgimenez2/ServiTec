@@ -478,11 +478,11 @@ export default function TiendaPage() {
                         onClick={() => toggleFavorite(product)}
                         size="sm"
                         variant="ghost"
-                        className="absolute bottom-2 right-2 h-8 w-8 p-0 bg-black/50 hover:bg-black/70 rounded-full"
+                        className="absolute bottom-2 right-2 h-8 w-8 p-0 hover:bg-black/70 rounded-full"
                       >
                         <Heart
                           className={`h-4 w-4 ${
-                            favorites.includes(product.id) ? "text-red-400 fill-current" : "text-white"
+                            favorites.includes(product.id) ? "text-red-500 fill-current" : "text-white"
                           }`}
                         />
                       </Button>
@@ -621,6 +621,7 @@ export default function TiendaPage() {
                       selectedProduct.images?.[currentImageIndex] ||
                       selectedProduct.image ||
                       "/placeholder.svg" ||
+                      "/placeholder.svg" ||
                       "/placeholder.svg"
                     }
                     alt={selectedProduct.name}
@@ -750,20 +751,22 @@ export default function TiendaPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="space-y-3">
                   <Button
                     onClick={() => toggleFavorite(selectedProduct)}
-                    variant="outline"
-                    className="border-white/30 text-white hover:bg-white/10"
+                    variant="ghost"
+                    className="w-full border border-white/30 text-white hover:bg-white/10 h-12 text-base font-semibold"
                   >
                     <Heart
-                      className={`h-4 w-4 ${favorites.includes(selectedProduct.id) ? "text-red-400 fill-current" : ""}`}
+                      className={`h-5 w-5 mr-2 ${favorites.includes(selectedProduct.id) ? "text-red-500 fill-current" : "text-white"}`}
                     />
+                    {favorites.includes(selectedProduct.id) ? "Quitar de favoritos" : "Agregar a favoritos"}
                   </Button>
+
                   <Button
                     onClick={() => addToCart(selectedProduct)}
                     disabled={selectedProduct.stock === 0 || addingToCart === selectedProduct.id}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white h-12 text-base font-semibold"
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white h-12 text-base font-semibold"
                   >
                     {addingToCart === selectedProduct.id ? (
                       <>
@@ -777,10 +780,11 @@ export default function TiendaPage() {
                       </>
                     )}
                   </Button>
+
                   <Button
                     onClick={() => handleBuyNow(selectedProduct)}
                     disabled={selectedProduct.stock === 0}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white h-12 text-base font-semibold"
+                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white h-12 text-base font-semibold"
                   >
                     <CreditCard className="h-5 w-5 mr-2" />
                     {selectedProduct.stock === 0 ? "Sin stock" : user ? "Comprar ahora" : "Inicia sesión"}

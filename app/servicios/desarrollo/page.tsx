@@ -268,14 +268,14 @@ export default function DesarrolloPage() {
                 className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
                 onClick={() => window.open(project.link, "_blank")}
               >
-                <div className="relative h-32 sm:h-40 lg:h-48 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
+                <div className="relative aspect-square bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden">
                   <img
                     src={project.image || "/placeholder.svg"}
                     alt={project.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                    <ExternalLink className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-transparent group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                    <ExternalLink className="w-6 h-6 sm:w-8 sm:h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
                 </div>
                 <CardContent className="p-3 sm:p-6">

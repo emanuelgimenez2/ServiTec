@@ -32,10 +32,33 @@ const createServiceObject = <T extends Service>(doc: any): T => {
   } as T
 }
 
+// Helper function to get collection count for naming
+const getCollectionCount = async (collectionName: string): Promise<number> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, collectionName))
+    return querySnapshot.size + 1
+  } catch (error) {
+    console.error(`Error getting ${collectionName} count:`, error)
+    return 1
+  }
+}
+
+// Helper function to get user count for naming
+const getUserCount = async (): Promise<number> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "usuarios"))
+    return querySnapshot.size + 1
+  } catch (error) {
+    console.error("Error getting user count:", error)
+    return 1
+  }
+}
+
 // Generic service functions
 const createService = async <T extends Service>(
   collectionName: string,
   data: Omit<T, "id" | "createdAt" | "updatedAt">,
+  customDocName?: string,
 ): Promise<string> => {
   try {
     console.log(`🔥 Creando documento en colección '${collectionName}':`, data)
@@ -44,14 +67,25 @@ const createService = async <T extends Service>(
       throw new Error("Firebase db no está inicializado")
     }
 
-    const docRef = await addDoc(collection(db, collectionName), {
+    let docRef
+    const docData = {
       ...data,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    })
+    }
 
-    console.log(`✅ Documento creado exitosamente en '${collectionName}' con ID:`, docRef.id)
-    return docRef.id
+    if (customDocName) {
+      // Use custom document name
+      docRef = doc(db, collectionName, customDocName)
+      await setDoc(docRef, docData)
+      console.log(`✅ Documento creado exitosamente en '${collectionName}' con nombre personalizado:`, customDocName)
+      return customDocName
+    } else {
+      // Use auto-generated ID
+      docRef = await addDoc(collection(db, collectionName), docData)
+      console.log(`✅ Documento creado exitosamente en '${collectionName}' con ID:`, docRef.id)
+      return docRef.id
+    }
   } catch (error) {
     console.error(`❌ Error creating ${collectionName} document:`, error)
     throw error
@@ -256,7 +290,13 @@ export interface Perfil extends Service {
 
 // Specific service implementations
 export const turnosService = {
-  createAppointment: (data: Omit<Turno, "id" | "createdAt" | "updatedAt">) => createService<Turno>("turnos", data),
+  createAppointment: async (data: Omit<Turno, "id" | "createdAt" | "updatedAt">) => {
+    const counter = await getCollectionCount("turnos")
+    const userName = data.name || "Usuario"
+    const userNumber = "1" // You might want to get this from user data
+    const docName = `turno ${counter} - ${userName}_${userNumber}`
+    return createService<Turno>("turnos", data, docName)
+  },
   getAllAppointments: () => getAllServices<Turno>("turnos"),
   getAppointmentById: (id: string) => getServiceById<Turno>("turnos", id),
   updateAppointment: (id: string, data: Partial<Turno>) => updateService<Turno>("turnos", id, data),
@@ -312,7 +352,12 @@ export const turnosService = {
 }
 
 export const servicioService = {
-  createService: (data: Omit<Servicio, "id" | "createdAt" | "updatedAt">) => createService<Servicio>("servicios", data),
+  createService: async (data: Omit<Servicio, "id" | "createdAt" | "updatedAt">) => {
+    const counter = await getCollectionCount("servicios")
+    const serviceType = data.serviceType || "Servicio"
+    const docName = `servicio ${counter} - ${serviceType}`
+    return createService<Servicio>("servicios", data, docName)
+  },
   getAllServices: () => getAllServices<Servicio>("servicios"),
   getServiceById: (id: string) => getServiceById<Servicio>("servicios", id),
   updateService: (id: string, data: Partial<Servicio>) => updateService<Servicio>("servicios", id, data),
@@ -320,7 +365,12 @@ export const servicioService = {
 }
 
 export const ventasService = {
-  createSale: (data: Omit<Venta, "id" | "createdAt" | "updatedAt">) => createService<Venta>("ventas", data),
+  createSale: async (data: Omit<Venta, "id" | "createdAt" | "updatedAt">) => {
+    const counter = await getCollectionCount("ventas")
+    const clientName = data.clientName || "Cliente"
+    const docName = `venta ${counter} - ${clientName}`
+    return createService<Venta>("ventas", data, docName)
+  },
   getAllSales: () => getAllServices<Venta>("ventas"),
   getSaleById: (id: string) => getServiceById<Venta>("ventas", id),
   updateSale: (id: string, data: Partial<Venta>) => updateService<Venta>("ventas", id, data),
@@ -331,12 +381,17 @@ export const mensajeService = {
   createMessage: async (data: Omit<Mensaje, "id" | "createdAt" | "updatedAt">): Promise<string> => {
     console.log("💬 === CREANDO MENSAJE ===", data)
     try {
+      const counter = await getCollectionCount("mensajes")
+      const userName = data.nombre || "Usuario"
+      const userNumber = "1" // You might want to get this from user data
+      const docName = `mensaje ${counter} -${userName}_${userNumber}-${counter}`
+
       const messageData = {
         ...data,
         status: "unread" as const,
       }
 
-      const messageId = await createService<Mensaje>("mensajes", messageData)
+      const messageId = await createService<Mensaje>("mensajes", messageData, docName)
       console.log("✅ Mensaje creado exitosamente con ID:", messageId)
       return messageId
     } catch (error) {
@@ -360,7 +415,12 @@ export const mensajeService = {
 }
 
 export const usuarioService = {
-  createUser: (data: Omit<Usuario, "id" | "createdAt" | "updatedAt">) => createService<Usuario>("usuarios", data),
+  createUser: async (data: Omit<Usuario, "id" | "createdAt" | "updatedAt">) => {
+    const counter = await getUserCount()
+    const userName = data.name || "Usuario"
+    const docName = `usuario n°${counter} - ${userName}`
+    return createService<Usuario>("usuarios", data, docName)
+  },
   getAllUsers: () => getAllServices<Usuario>("usuarios"),
   getUserById: (id: string) => getServiceById<Usuario>("usuarios", id),
   updateUser: (id: string, data: Partial<Usuario>) => updateService<Usuario>("usuarios", id, data),
@@ -413,11 +473,16 @@ export const perfilService = {
       const querySnapshot = await getDocs(q)
 
       if (querySnapshot.empty) {
+        const counter = await getCollectionCount("perfil")
+        const userName = profileData.name || "Usuario"
+        const userNumber = "1" // You might want to get this from user data
+        const docName = `perfil ${counter} - ${userName}_${userNumber}`
+
         const newProfile = {
           userId,
           ...profileData,
         }
-        await createService<Perfil>("perfil", newProfile)
+        await createService<Perfil>("perfil", newProfile, docName)
         console.log("✅ Nuevo perfil creado")
       } else {
         const profileDoc = querySnapshot.docs[0]
@@ -433,7 +498,12 @@ export const perfilService = {
   createProfile: async (profileData: Omit<Perfil, "id" | "createdAt" | "updatedAt">): Promise<string> => {
     console.log("🆕 === CREANDO PERFIL ===", profileData)
     try {
-      const profileId = await createService<Perfil>("perfil", profileData)
+      const counter = await getCollectionCount("perfil")
+      const userName = profileData.name || "Usuario"
+      const userNumber = "1" // You might want to get this from user data
+      const docName = `perfil ${counter} - ${userName}_${userNumber}`
+
+      const profileId = await createService<Perfil>("perfil", profileData, docName)
       console.log("✅ Perfil creado con ID:", profileId)
       return profileId
     } catch (error) {
@@ -497,12 +567,17 @@ export const productosService = {
 
   async createProduct(productData: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, "productos"), {
+      const counter = await getCollectionCount("productos")
+      const productName = productData.name || "Producto"
+      const docName = `producto ${counter} - ${productName}`
+
+      const docRef = doc(db, "productos", docName)
+      await setDoc(docRef, {
         ...productData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
-      return docRef.id
+      return docName
     } catch (error) {
       console.error("Error creando producto:", error)
       throw error
@@ -546,7 +621,7 @@ export const productosService = {
 }
 
 // Helper function to generate cart document name - ARREGLADO
-const generateCartDocumentName = (userName: string, compraNumber: number): string => {
+const generateCartDocumentName = (userName: string, userNumber: string, compraNumber: number): string => {
   // Validar que userName existe y no es undefined/null
   if (!userName || typeof userName !== "string") {
     console.warn("⚠️ userName es undefined o inválido, usando 'usuario' por defecto")
@@ -560,7 +635,7 @@ const generateCartDocumentName = (userName: string, compraNumber: number): strin
     .replace(/[^a-z0-9]/g, "")
     .substring(0, 20) // Limitar longitud
 
-  return `${cleanName || "usuario"}-compra${compraNumber}`
+  return `carrito de ${cleanName || "usuario"}_${userNumber} compra n°${compraNumber}`
 }
 
 export const carritoService = {
@@ -605,6 +680,11 @@ export const carritoService = {
     try {
       console.log("🆕 Creando nuevo carrito para usuario:", userId)
 
+      const counter = await getCollectionCount("carrito")
+      const userName = "Usuario" // You might want to get this from user data
+      const userNumber = "1" // You might want to get this from user data
+      const docName = `carrito ${counter} - ${userName}_${userNumber}`
+
       const newCart = {
         userId,
         items: [],
@@ -614,10 +694,11 @@ export const carritoService = {
         updatedAt: serverTimestamp(),
       }
 
-      const docRef = await addDoc(collection(db, "carrito"), newCart)
+      const docRef = doc(db, "carrito", docName)
+      await setDoc(docRef, newCart)
 
       const cart: Cart = {
-        id: docRef.id,
+        id: docName,
         userId,
         items: [],
         total: 0,
@@ -796,7 +877,8 @@ export const carritoService = {
       const compraNumber = completedCarts.length + 1
 
       // Generar nombre del documento - ARREGLADO
-      const documentName = generateCartDocumentName(userName || "usuario ", userName, compraNumber)
+      const userNumber = "1" // You might want to get this from user data
+      const documentName = generateCartDocumentName(userName || "usuario", userNumber, compraNumber)
 
       // Crear nuevo documento con nombre personalizado
       const cartData = {
@@ -831,14 +913,20 @@ export const pedidosService = {
     try {
       console.log("📦 Creando nuevo pedido...")
 
-      const docRef = await addDoc(collection(db, "pedidos"), {
+      const counter = await getCollectionCount("pedidos")
+      const userName = orderData.userName || "Usuario"
+      const userNumber = "1" // You might want to get this from user data
+      const docName = `pedido ${counter} - ${userName}_${userNumber}`
+
+      const docRef = doc(db, "pedidos", docName)
+      await setDoc(docRef, {
         ...orderData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
 
-      console.log("✅ Pedido creado:", docRef.id)
-      return docRef.id
+      console.log("✅ Pedido creado:", docName)
+      return docName
     } catch (error) {
       console.error("❌ Error creando pedido:", error)
       throw error
@@ -969,7 +1057,12 @@ export const listaDeseosService = {
     try {
       console.log("➕ Agregando a lista de deseos:", { userId, productId })
 
-      const wishlistRef = doc(db, "lista-de-deseos", userId)
+      const counter = await getCollectionCount("lista-de-deseos")
+      const userName = "Usuario" // You might want to get this from user data
+      const userNumber = "1" // You might want to get this from user data
+      const docName = `lista-deseos ${counter} - ${userName}_${userNumber}`
+
+      const wishlistRef = doc(db, "lista-de-deseos", docName)
       const wishlistDoc = await getDoc(wishlistRef)
 
       let productos: string[] = []

@@ -257,19 +257,19 @@ export default function CarritoPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 pt-20">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-6xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-8 space-y-2 sm:space-y-0">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Link href="/tienda">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 text-xs sm:text-sm">
+                <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 Seguir Comprando
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-white">Mi Carrito</h1>
-              <p className="text-white/70">{cart.items.length} productos en tu carrito</p>
+              <h1 className="text-xl sm:text-3xl font-bold text-white">Mi Carrito</h1>
+              <p className="text-white/70 text-xs sm:text-base">{cart.items.length} productos</p>
             </div>
           </div>
 
@@ -278,71 +278,82 @@ export default function CarritoPage() {
               onClick={clearCart}
               variant="ghost"
               size="sm"
-              className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              className="text-red-400 hover:bg-red-500/10 hover:text-red-300 text-xs sm:text-sm"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Vaciar Carrito
+              <Trash2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              Vaciar
             </Button>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8">
           {/* Cart Items */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-2 sm:space-y-4">
             {cart.items.map((item) => (
               <Card
                 key={item.productId}
                 className="bg-white/10 backdrop-blur-md border-white/20 hover:bg-white/15 transition-all duration-300"
               >
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-white/10">
+                <CardContent className="p-3 sm:p-6">
+                  <div className="flex items-center space-x-2 sm:space-x-4">
+                    <div className="relative w-12 h-12 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
                       <Image src={item.image || "/placeholder.svg"} alt={item.name} fill className="object-cover" />
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white truncate">{item.name}</h3>
-                      <Badge variant="secondary" className="bg-purple-500/20 text-purple-200 border-purple-500/30">
+                      <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{item.name}</h3>
+                      <Badge
+                        variant="secondary"
+                        className="bg-purple-500/20 text-purple-200 border-purple-500/30 text-xs"
+                      >
                         {item.category}
                       </Badge>
-                      <p className="text-2xl font-bold text-green-400 mt-2">${item.price.toLocaleString()}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-green-400 mt-1">
+                        ${item.price.toLocaleString()}
+                      </p>
                     </div>
 
-                    <div className="flex items-center space-x-3">
-                      <Button
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                        disabled={updating === item.productId || item.quantity <= 1}
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-white hover:bg-white/10"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
+                    <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          disabled={updating === item.productId || item.quantity <= 1}
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-white hover:bg-white/10"
+                        >
+                          <Minus className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
 
-                      <span className="text-white font-semibold min-w-[2rem] text-center">{item.quantity}</span>
+                        <span className="text-white font-semibold min-w-[1.5rem] sm:min-w-[2rem] text-center text-sm sm:text-base">
+                          {item.quantity}
+                        </span>
 
-                      <Button
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                        disabled={updating === item.productId}
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-white hover:bg-white/10"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
+                        <Button
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          disabled={updating === item.productId}
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-white hover:bg-white/10"
+                        >
+                          <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                      </div>
 
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-white">${(item.price * item.quantity).toLocaleString()}</p>
-                      <Button
-                        onClick={() => removeItem(item.productId)}
-                        disabled={updating === item.productId}
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-400 hover:bg-red-500/10 hover:text-red-300 mt-2"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="text-center sm:text-right">
+                        <p className="text-sm sm:text-xl font-bold text-white">
+                          ${(item.price * item.quantity).toLocaleString()}
+                        </p>
+                        <Button
+                          onClick={() => removeItem(item.productId)}
+                          disabled={updating === item.productId}
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-400 hover:bg-red-500/10 hover:text-red-300 mt-1"
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -352,17 +363,17 @@ export default function CarritoPage() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <Card className="bg-white/10 backdrop-blur-md border-white/20 sticky top-24">
-              <CardContent className="p-6">
-                <h2 className="text-xl font-bold text-white mb-6">Resumen del Pedido</h2>
+            <Card className="bg-white/10 backdrop-blur-md border-white/20 sticky top-20 sm:top-24">
+              <CardContent className="p-4 sm:p-6">
+                <h2 className="text-lg sm:text-xl font-bold text-white mb-4 sm:mb-6">Resumen del Pedido</h2>
 
-                <div className="space-y-4">
-                  <div className="flex justify-between text-white">
-                    <span>Subtotal ({cart.items.length} productos)</span>
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="flex justify-between text-white text-sm sm:text-base">
+                    <span>Subtotal ({cart.items.length})</span>
                     <span>${subtotal.toLocaleString()}</span>
                   </div>
 
-                  <div className="flex justify-between text-white">
+                  <div className="flex justify-between text-white text-sm sm:text-base">
                     <span>Envío</span>
                     <span className={shipping === 0 ? "text-green-400" : ""}>
                       {shipping === 0 ? "¡GRATIS!" : `$${shipping.toLocaleString()}`}
@@ -370,12 +381,12 @@ export default function CarritoPage() {
                   </div>
 
                   {shipping > 0 && (
-                    <p className="text-sm text-white/70">Envío gratis en compras superiores a $50.000</p>
+                    <p className="text-xs sm:text-sm text-white/70">Envío gratis en compras superiores a $50.000</p>
                   )}
 
                   <Separator className="bg-white/20" />
 
-                  <div className="flex justify-between text-xl font-bold text-white">
+                  <div className="flex justify-between text-lg sm:text-xl font-bold text-white">
                     <span>Total</span>
                     <span>${total.toLocaleString()}</span>
                   </div>
@@ -384,19 +395,19 @@ export default function CarritoPage() {
                 {/* Botón de proceder al pago */}
                 <Button
                   onClick={() => setShowPaymentModal(true)}
-                  className="w-full mt-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3"
+                  className="w-full mt-4 sm:mt-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-2 sm:py-3 text-sm sm:text-base"
                   size="lg"
                 >
-                  <CreditCard className="mr-2 h-5 w-5" />
+                  <CreditCard className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                   Proceder al Pago
                 </Button>
 
-                <div className="mt-4 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                <div className="mt-3 sm:mt-4 p-3 sm:p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
                   <div className="flex items-center space-x-2 text-blue-200">
-                    <ShoppingBag className="h-4 w-4" />
-                    <span className="text-sm">Compra 100% segura</span>
+                    <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-xs sm:text-sm">Compra 100% segura</span>
                   </div>
-                  <p className="text-xs text-blue-200/70 mt-1">Tus datos están protegidos con encriptación SSL</p>
+                  <p className="text-xs text-blue-200/70 mt-1">Tus datos están protegidos</p>
                 </div>
               </CardContent>
             </Card>

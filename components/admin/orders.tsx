@@ -1,5 +1,7 @@
 "use client"
 
+import { DialogTrigger } from "@/components/ui/dialog"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,16 +9,22 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { ShoppingCart, Package, Truck, CheckCircle, XCircle, Clock, DollarSign, User, Trash2, Eye } from "lucide-react"
+import {
+  ShoppingCart,
+  Package,
+  Truck,
+  CheckCircle,
+  XCircle,
+  Clock,
+  DollarSign,
+  User,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+  Filter,
+} from "lucide-react"
 import { pedidosService } from "@/lib/firebase-services"
 
 interface OrderItem {
@@ -50,17 +58,9 @@ export default function AdminOrders() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
+  const [showDashboard, setShowDashboard] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
   const { toast } = useToast()
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    handleResize()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
 
   useEffect(() => {
     loadOrders()
@@ -154,7 +154,9 @@ export default function AdminOrders() {
     } catch (error) {
       console.error("Error updating order:", error)
       // Fallback a localStorage
-      const updatedOrders = orders.map((order) => (order.id === editingOrder.id ? editingOrder : order))
+      const updatedOrders = orders.map((order) =>
+        order.id === editingOrder.id ? { ...editingOrder, updatedAt: new Date().toISOString() } : order,
+      )
       setOrders(updatedOrders)
       localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
 
@@ -194,41 +196,59 @@ export default function AdminOrders() {
       case "pending":
         return (
           <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-            <Clock className="w-2 h-2" />
+            <Clock className="w-3 h-3" />
             Pendiente
           </Badge>
         )
       case "processing":
         return (
           <Badge variant="default" className="bg-blue-500 flex items-center gap-1 text-xs">
-            <Package className="w-2 h-2" />
+            <Package className="w-3 h-3" />
             Procesando
           </Badge>
         )
       case "shipped":
         return (
           <Badge variant="default" className="bg-orange-500 flex items-center gap-1 text-xs">
-            <Truck className="w-2 h-2" />
+            <Truck className="w-3 h-3" />
             Enviado
           </Badge>
         )
       case "delivered":
         return (
           <Badge variant="default" className="bg-green-500 flex items-center gap-1 text-xs">
-            <CheckCircle className="w-2 h-2" />
+            <CheckCircle className="w-3 h-3" />
             Entregado
           </Badge>
         )
       case "cancelled":
         return (
           <Badge variant="destructive" className="flex items-center gap-1 text-xs">
-            <XCircle className="w-2 h-2" />
+            <XCircle className="w-3 h-3" />
             Cancelado
           </Badge>
         )
       default:
         return null
     }
+  }
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "ARS",
+      minimumFractionDigits: 0,
+    }).format(price)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("es-AR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
   }
 
   const stats = {
@@ -260,120 +280,120 @@ export default function AdminOrders() {
         </div>
       </div>
 
-      {/* Estadísticas - Responsive */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-6">
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Total</p>
-                <p className="text-lg lg:text-2xl font-bold text-white">{stats.total}</p>
-              </div>
-              <ShoppingCart className="h-6 w-6 lg:h-8 lg:w-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Pendientes</p>
-                <p className="text-lg lg:text-2xl font-bold text-yellow-400">{stats.pending}</p>
-              </div>
-              <Clock className="h-6 w-6 lg:h-8 lg:w-8 text-yellow-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Procesando</p>
-                <p className="text-lg lg:text-2xl font-bold text-blue-400">{stats.processing}</p>
-              </div>
-              <Package className="h-6 w-6 lg:h-8 lg:w-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Enviados</p>
-                <p className="text-lg lg:text-2xl font-bold text-orange-400">{stats.shipped}</p>
-              </div>
-              <Truck className="h-6 w-6 lg:h-8 lg:w-8 text-orange-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Entregados</p>
-                <p className="text-lg lg:text-2xl font-bold text-green-400">{stats.delivered}</p>
-              </div>
-              <CheckCircle className="h-6 w-6 lg:h-8 lg:w-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-white/70">Ingresos</p>
-                <p className="text-sm lg:text-xl font-bold text-purple-400">${stats.totalRevenue.toLocaleString()}</p>
-              </div>
-              <DollarSign className="h-6 w-6 lg:h-8 lg:w-8 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtros */}
+      {/* Dashboard desplegable */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-        <CardHeader>
-          <CardTitle className="text-white">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="search" className="text-white/90">
-                Buscar
-              </Label>
-              <Input
-                id="search"
-                placeholder="ID, nombre, email..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-white/90">Estado</Label>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
-                  <SelectValue placeholder="Todos los estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="processing">Procesando</SelectItem>
-                  <SelectItem value="shipped">Enviado</SelectItem>
-                  <SelectItem value="delivered">Entregado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white">Dashboard de Pedidos</CardTitle>
+            <Button
+              variant="ghost"
+              onClick={() => setShowDashboard(!showDashboard)}
+              className="text-white hover:bg-white/10"
+            >
+              {showDashboard ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
           </div>
-        </CardContent>
+        </CardHeader>
+        {showDashboard && (
+          <CardContent>
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/70">Total</p>
+                      <p className="text-2xl font-bold text-white">{stats.total}</p>
+                    </div>
+                    <ShoppingCart className="h-8 w-8 text-blue-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/70">Pendientes</p>
+                      <p className="text-2xl font-bold text-yellow-400">{stats.pending}</p>
+                    </div>
+                    <Clock className="h-8 w-8 text-yellow-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/70">Entregados</p>
+                      <p className="text-2xl font-bold text-green-400">{stats.delivered}</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-green-400" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-white/70">Ingresos</p>
+                      <p className="text-lg font-bold text-green-400">{formatPrice(stats.totalRevenue)}</p>
+                    </div>
+                    <DollarSign className="h-8 w-8 text-green-400" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        )}
       </Card>
+
+      {/* Filtros en modal */}
+      <div className="flex justify-end">
+        <Dialog open={showFilters} onOpenChange={setShowFilters}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Filtros de Búsqueda</DialogTitle>
+              <DialogDescription>Filtra los pedidos de la tienda</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="search">Buscar</Label>
+                <Input
+                  id="search"
+                  placeholder="ID, nombre, email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Estado</Label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="processing">Procesando</SelectItem>
+                    <SelectItem value="shipped">Enviado</SelectItem>
+                    <SelectItem value="delivered">Entregado</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Lista de pedidos */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
@@ -386,158 +406,11 @@ export default function AdminOrders() {
               <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>No se encontraron pedidos con los filtros aplicados</p>
             </div>
-          ) : isMobile ? (
-            // Vista móvil - Cards compactas en 2 columnas
-            <div className="grid gap-3 grid-cols-2">
-              {filteredOrders.map((order) => (
-                <Card key={order.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
-                  <CardContent className="p-3">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-semibold text-white text-xs line-clamp-1">
-                            {order.userName || "Usuario"}
-                          </h3>
-                          <p className="text-white/70 text-xs">#{order.id?.slice(-8) || "N/A"}</p>
-                        </div>
-                        {getStatusBadge(order.status)}
-                      </div>
-
-                      <div className="space-y-1 text-xs">
-                        <div className="flex items-center text-white/80">
-                          <DollarSign className="w-3 h-3 mr-1" />
-                          <span className="font-bold text-green-400">${(order.total || 0).toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center text-white/80">
-                          <Package className="w-3 h-3 mr-1" />
-                          <span>{order.items?.length || 0} productos</span>
-                        </div>
-                        <div className="text-white/70">{new Date(order.createdAt).toLocaleDateString("es-AR")}</div>
-                      </div>
-
-                      <div className="flex gap-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-1"
-                              onClick={() => setSelectedOrder(order)}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Pedido #{selectedOrder?.id?.slice(-8) || "N/A"}</DialogTitle>
-                              <DialogDescription>Detalles completos del pedido</DialogDescription>
-                            </DialogHeader>
-
-                            {selectedOrder && (
-                              <div className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div>
-                                    <Label className="text-sm font-medium">Cliente</Label>
-                                    <p className="text-sm">{selectedOrder.userName || "N/A"}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Email</Label>
-                                    <p className="text-sm">{selectedOrder.userEmail || "N/A"}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Teléfono</Label>
-                                    <p className="text-sm">{selectedOrder.userPhone || "N/A"}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Estado</Label>
-                                    <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm font-medium">Dirección de envío</Label>
-                                  <p className="text-sm">{selectedOrder.shippingAddress || "N/A"}</p>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm font-medium">Productos</Label>
-                                  <div className="mt-2 space-y-2">
-                                    {selectedOrder.items?.map((item) => (
-                                      <div
-                                        key={item.id}
-                                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <img
-                                            src={item.image || "/placeholder.svg"}
-                                            alt={item.name}
-                                            className="w-10 h-10 object-cover rounded"
-                                          />
-                                          <div>
-                                            <p className="text-sm font-medium">{item.name}</p>
-                                            <p className="text-xs text-muted-foreground">Cantidad: {item.quantity}</p>
-                                          </div>
-                                        </div>
-                                        <p className="text-sm font-bold">
-                                          ${((item.price || 0) * (item.quantity || 0)).toLocaleString()}
-                                        </p>
-                                      </div>
-                                    )) || <p className="text-sm text-gray-500">No hay productos</p>}
-                                  </div>
-                                </div>
-
-                                <div className="flex justify-between items-center pt-2 border-t">
-                                  <span className="font-medium">Total:</span>
-                                  <span className="text-lg font-bold text-green-600">
-                                    ${(selectedOrder.total || 0).toLocaleString()}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-
-                        {order.status === "pending" && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, "processing")}
-                            className="bg-blue-500 hover:bg-blue-600 text-xs p-1"
-                          >
-                            ✓
-                          </Button>
-                        )}
-
-                        {order.status === "processing" && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, "shipped")}
-                            className="bg-orange-500 hover:bg-orange-600 text-xs p-1"
-                          >
-                            📦
-                          </Button>
-                        )}
-
-                        {order.status === "shipped" && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, "delivered")}
-                            className="bg-green-500 hover:bg-green-600 text-xs p-1"
-                          >
-                            ✅
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           ) : (
-            // Vista desktop - Lista completa
             <div className="space-y-4">
               {filteredOrders.map((order) => (
                 <Card key={order.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
-                  <CardContent className="p-4">
+                  <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -545,19 +418,18 @@ export default function AdminOrders() {
                           <Badge variant="outline" className="text-white/80 border-white/30">
                             #{order.id?.slice(-8) || "N/A"}
                           </Badge>
-                          <span className="text-sm text-white/70">
-                            {new Date(order.createdAt).toLocaleDateString("es-AR")}
-                          </span>
+                          <span className="text-sm text-white/70">{formatDate(order.createdAt)}</span>
                         </div>
 
-                        <div className="grid gap-1 md:grid-cols-2">
+                        {/* Update here */}
+                        <div className="grid gap-1 grid-cols-1 sm:grid-cols-2">
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-white/70" />
-                            <span className="font-medium text-white">{order.userName || "Usuario"}</span>
+                            <span className="font-medium text-white text-sm">{order.userName || "Usuario"}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4 text-white/70" />
-                            <span className="font-bold text-green-400">${(order.total || 0).toLocaleString()}</span>
+                            <span className="font-bold text-green-400 text-sm">{formatPrice(order.total || 0)}</span>
                           </div>
                         </div>
 
@@ -631,7 +503,7 @@ export default function AdminOrders() {
                                           </div>
                                         </div>
                                         <p className="text-sm font-bold">
-                                          ${((item.price || 0) * (item.quantity || 0)).toLocaleString()}
+                                          {formatPrice((item.price || 0) * (item.quantity || 0))}
                                         </p>
                                       </div>
                                     )) || <p className="text-sm text-gray-500">No hay productos</p>}
@@ -641,7 +513,7 @@ export default function AdminOrders() {
                                 <div className="flex justify-between items-center pt-2 border-t">
                                   <span className="font-medium">Total:</span>
                                   <span className="text-lg font-bold text-green-600">
-                                    ${(selectedOrder.total || 0).toLocaleString()}
+                                    {formatPrice(selectedOrder.total || 0)}
                                   </span>
                                 </div>
                               </div>
