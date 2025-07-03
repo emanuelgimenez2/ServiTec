@@ -17,9 +17,6 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import {
   MessageSquare,
-  Search,
-  Filter,
-  Eye,
   CheckCircle,
   AlertCircle,
   Computer,
@@ -31,6 +28,7 @@ import {
   User,
   ChevronDown,
   ChevronRight,
+  Eye,
 } from "lucide-react"
 import { mensajeService } from "@/lib/firebase-services"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -88,7 +86,6 @@ export default function AdminMessages() {
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
   const [loading, setLoading] = useState(true)
   const [showDashboard, setShowDashboard] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -303,70 +300,60 @@ export default function AdminMessages() {
         )}
       </Card>
 
-      {/* Filtros en modal */}
-      <div className="flex justify-end">
-        <Dialog open={showFilters} onOpenChange={setShowFilters}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Filtros y Búsqueda</DialogTitle>
-              <DialogDescription>Encuentra mensajes específicos</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="search">Buscar</Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="search"
-                    placeholder="Nombre, email, teléfono..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Tipo de servicio</Label>
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los tipos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los tipos</SelectItem>
-                    <SelectItem value="reparacion">Reparación PC</SelectItem>
-                    <SelectItem value="starlink">Starlink</SelectItem>
-                    <SelectItem value="camaras">Cámaras</SelectItem>
-                    <SelectItem value="desarrollo">Desarrollo Web</SelectItem>
-                    <SelectItem value="contacto">Contacto</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los estados" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="unread">Sin leer</SelectItem>
-                    <SelectItem value="read">Leído</SelectItem>
-                    <SelectItem value="responded">Respondido</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Filtros */}
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-white">
+                Buscar
+              </Label>
+              <Input
+                id="search"
+                placeholder="Nombre, email, teléfono..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+
+            <div className="space-y-2">
+              <Label className="text-white">Tipo de servicio</Label>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Todos los tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los tipos</SelectItem>
+                  <SelectItem value="reparacion">Reparación PC</SelectItem>
+                  <SelectItem value="starlink">Starlink</SelectItem>
+                  <SelectItem value="camaras">Cámaras</SelectItem>
+                  <SelectItem value="desarrollo">Desarrollo Web</SelectItem>
+                  <SelectItem value="contacto">Contacto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-white">Estado</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="unread">Sin leer</SelectItem>
+                  <SelectItem value="read">Leído</SelectItem>
+                  <SelectItem value="responded">Respondido</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Lista de mensajes */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
@@ -374,166 +361,152 @@ export default function AdminMessages() {
           <CardTitle className="text-white">Mensajes ({filteredMessages.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {filteredMessages.length === 0 ? (
-              <div className="text-center py-16 text-white/70">
-                <MessageSquare className="h-16 w-16 mx-auto mb-6 opacity-50" />
-                <p className="text-xl mb-2">No se encontraron mensajes</p>
-                <p>No hay mensajes que coincidan con los filtros aplicados</p>
-              </div>
-            ) : (
-              filteredMessages.map((message) => (
+          {filteredMessages.length === 0 ? (
+            <div className="text-center py-16 text-white/70">
+              <MessageSquare className="h-16 w-16 mx-auto mb-6 opacity-50" />
+              <p className="text-xl mb-2">No se encontraron mensajes</p>
+              <p>No hay mensajes que coincidan con los filtros aplicados</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+              {filteredMessages.map((message) => (
                 <Card
                   key={message.id}
                   className={`bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300 ${
                     message.status === "unread" ? "border-red-400/50 bg-red-500/5" : ""
                   }`}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {getTypeBadge(message.serviceType)}
-                          {getStatusBadge(message.status)}
-                          <span className="text-sm text-white/70">
-                            {new Date(message.createdAt).toLocaleDateString("es-AR", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-
-                        <div className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-white/70" />
-                            <span className="font-medium text-white text-sm">{message.nombre}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-white/70" />
-                            <span className="text-sm text-white/80 truncate">{message.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-white/70" />
-                            <span className="text-sm text-white/80">{message.telefono}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-white/70 line-clamp-2">{message.mensaje}</p>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex flex-col gap-2">
+                        {getTypeBadge(message.serviceType)}
+                        {getStatusBadge(message.status)}
                       </div>
 
-                      <div className="flex items-center gap-2 ml-4">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedMessage(message)
-                                if (message.status === "unread") {
-                                  updateMessageStatus(message.id, "read")
-                                }
-                              }}
-                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                            >
-                              <Eye className="h-4 w-4 mr-1" />
-                              Ver
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle className="flex items-center gap-2 text-white">
-                                {messageTypeConfig[message.serviceType]?.title}
-                                {getTypeBadge(message.serviceType)}
-                              </DialogTitle>
-                              <DialogDescription className="text-white/70">
-                                Recibido el{" "}
-                                {new Date(message.createdAt).toLocaleDateString("es-AR", {
-                                  weekday: "long",
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
-                              </DialogDescription>
-                            </DialogHeader>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-white/70" />
+                          <span className="font-medium text-white text-sm truncate">{message.nombre}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-white/70" />
+                          <span className="text-sm text-white/80 truncate">{message.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-white/70" />
+                          <span className="text-sm text-white/80">{message.telefono}</span>
+                        </div>
+                      </div>
 
-                            {selectedMessage && (
-                              <div className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div>
-                                    <Label className="text-sm font-medium">Nombre completo</Label>
-                                    <p className="text-sm">{selectedMessage.nombre}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Email</Label>
-                                    <p className="text-sm">{selectedMessage.email}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Teléfono</Label>
-                                    <p className="text-sm">{selectedMessage.telefono}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Estado</Label>
-                                    <div className="mt-1">{getStatusBadge(selectedMessage.status)}</div>
-                                  </div>
-                                </div>
+                      <p className="text-sm text-white/70 line-clamp-2">{message.mensaje}</p>
 
+                      <div className="text-xs text-white/70">
+                        {new Date(message.createdAt).toLocaleDateString("es-AR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </div>
+
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedMessage(message)
+                              if (message.status === "unread") {
+                                updateMessageStatus(message.id, "read")
+                              }
+                            }}
+                            className="bg-white/10 border-white/20 text-white hover:bg-white/20 w-full"
+                          >
+                            <Eye className="h-4 w-4 lg:mr-2" />
+                            <span className="hidden lg:inline">Ver</span>
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[90vw] max-h-[90vh] overflow-y-auto">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2 text-white">
+                              {messageTypeConfig[message.serviceType]?.title}
+                              {getTypeBadge(message.serviceType)}
+                            </DialogTitle>
+                            <DialogDescription className="text-white/70">
+                              Recibido el{" "}
+                              {new Date(message.createdAt).toLocaleDateString("es-AR", {
+                                weekday: "long",
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </DialogDescription>
+                          </DialogHeader>
+
+                          {selectedMessage && (
+                            <div className="space-y-4">
+                              <div className="grid gap-4 grid-cols-1">
                                 <div>
-                                  <Label className="text-sm font-medium">Mensaje</Label>
-                                  <div className="mt-1 p-4 bg-gray-50 rounded-xl">
-                                    <p className="text-sm whitespace-pre-wrap">{selectedMessage.mensaje}</p>
-                                  </div>
+                                  <Label className="text-sm font-medium">Nombre completo</Label>
+                                  <p className="text-sm">{selectedMessage.nombre}</p>
                                 </div>
-
-                                <div className="flex gap-2 pt-4">
-                                  {selectedMessage.status !== "responded" && (
-                                    <Button
-                                      onClick={() => updateMessageStatus(selectedMessage.id, "responded")}
-                                      className="bg-green-500 hover:bg-green-600"
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-1" />
-                                      Marcar como respondido
-                                    </Button>
-                                  )}
-                                  <Button variant="outline" asChild>
-                                    <a href={`mailto:${selectedMessage.email}`}>
-                                      <Mail className="h-4 w-4 mr-1" />
-                                      Responder por email
-                                    </a>
-                                  </Button>
-                                  <Button variant="outline" asChild>
-                                    <a href={`tel:${selectedMessage.telefono}`}>
-                                      <Phone className="h-4 w-4 mr-1" />
-                                      Llamar
-                                    </a>
-                                  </Button>
+                                <div>
+                                  <Label className="text-sm font-medium">Email</Label>
+                                  <p className="text-sm">{selectedMessage.email}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Teléfono</Label>
+                                  <p className="text-sm">{selectedMessage.telefono}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Estado</Label>
+                                  <div className="mt-1">{getStatusBadge(selectedMessage.status)}</div>
                                 </div>
                               </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
 
-                        {message.status === "read" && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateMessageStatus(message.id, "responded")}
-                            className="bg-green-500 hover:bg-green-600"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Respondido
-                          </Button>
-                        )}
-                      </div>
+                              <div>
+                                <Label className="text-sm font-medium">Mensaje</Label>
+                                <div className="mt-1 p-4 bg-gray-50 rounded-xl">
+                                  <p className="text-sm whitespace-pre-wrap">{selectedMessage.mensaje}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-col gap-2 pt-4">
+                                {selectedMessage.status !== "responded" && (
+                                  <Button
+                                    onClick={() => updateMessageStatus(selectedMessage.id, "responded")}
+                                    className="bg-green-500 hover:bg-green-600 w-full"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Marcar como respondido
+                                  </Button>
+                                )}
+                                <Button variant="outline" asChild className="w-full bg-transparent">
+                                  <a href={`mailto:${selectedMessage.email}`}>
+                                    <Mail className="h-4 w-4 mr-1" />
+                                    Responder por email
+                                  </a>
+                                </Button>
+                                <Button variant="outline" asChild className="w-full bg-transparent">
+                                  <a href={`tel:${selectedMessage.telefono}`}>
+                                    <Phone className="h-4 w-4 mr-1" />
+                                    Llamar
+                                  </a>
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </CardContent>
                 </Card>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

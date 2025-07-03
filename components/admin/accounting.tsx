@@ -28,7 +28,7 @@ import {
   Edit,
   ChevronDown,
   ChevronRight,
-  Filter,
+  Eye,
 } from "lucide-react"
 import { servicioService, ventasService } from "@/lib/firebase-services"
 
@@ -67,7 +67,7 @@ export default function AdminAccounting() {
   const [editingRecord, setEditingRecord] = useState<AccountingRecord | null>(null)
   const [newRecord, setNewRecord] = useState<Partial<AccountingRecord>>({})
   const [showDashboard, setShowDashboard] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState<AccountingRecord | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -380,23 +380,75 @@ export default function AdminAccounting() {
         )}
       </Card>
 
-      {/* Filtros y acciones */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-2">
+      {/* Filtros y botón agregar */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20 flex-1">
+          <CardHeader>
+            <CardTitle className="text-white">Filtros</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="search" className="text-white">
+                  Buscar
+                </Label>
+                <Input
+                  id="search"
+                  placeholder="Cliente, descripción, producto..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-white">Tipo</Label>
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Todos los tipos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    <SelectItem value="service">Servicios</SelectItem>
+                    <SelectItem value="sale">Ventas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-white">Estado</Label>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                    <SelectValue placeholder="Todos los estados" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="completed">Completado</SelectItem>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                    <SelectItem value="refunded">Reembolsado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex lg:items-end lg:pb-6">
           <Dialog open={isAddingRecord} onOpenChange={setIsAddingRecord}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-sm">
+              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 w-full lg:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Registro
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[90vw] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Agregar Nuevo Registro</DialogTitle>
                 <DialogDescription>Registra un nuevo servicio o venta</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Tipo</Label>
                     <Select
@@ -449,22 +501,7 @@ export default function AdminAccounting() {
                         placeholder="Descripción del servicio"
                         value={(newRecord as ServiceRecord).description || ""}
                         onChange={(e) => setNewRecord({ ...newRecord, description: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Teléfono del Cliente</Label>
-                      <Input
-                        placeholder="Teléfono del cliente"
-                        value={newRecord.clientPhone || ""}
-                        onChange={(e) => setNewRecord({ ...newRecord, clientPhone: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Notas</Label>
-                      <Textarea
-                        placeholder="Notas adicionales"
-                        value={newRecord.notes || ""}
-                        onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
+                        rows={3}
                       />
                     </div>
                   </>
@@ -480,7 +517,7 @@ export default function AdminAccounting() {
                         onChange={(e) => setNewRecord({ ...newRecord, productName: e.target.value })}
                       />
                     </div>
-                    <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label>Cantidad</Label>
                         <Input
@@ -510,26 +547,10 @@ export default function AdminAccounting() {
                         />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Teléfono del Cliente</Label>
-                      <Input
-                        placeholder="Teléfono del cliente"
-                        value={newRecord.clientPhone || ""}
-                        onChange={(e) => setNewRecord({ ...newRecord, clientPhone: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Notas</Label>
-                      <Textarea
-                        placeholder="Notas adicionales"
-                        value={newRecord.notes || ""}
-                        onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
-                      />
-                    </div>
                   </>
                 )}
 
-                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Monto Total</Label>
                     <Input
@@ -550,7 +571,7 @@ export default function AdminAccounting() {
                   </div>
                 </div>
 
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 pt-4">
                   <Button variant="outline" onClick={() => setIsAddingRecord(false)}>
                     Cancelar
                   </Button>
@@ -560,229 +581,249 @@ export default function AdminAccounting() {
             </DialogContent>
           </Dialog>
         </div>
-        <div className="flex justify-end">
-          <Dialog open={showFilters} onOpenChange={setShowFilters}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Filtros de Búsqueda</DialogTitle>
-                <DialogDescription>Filtra los registros contables</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="search">Buscar</Label>
-                  <Input
-                    id="search"
-                    placeholder="Cliente, descripción, producto..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Tipo</Label>
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos los tipos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los tipos</SelectItem>
-                      <SelectItem value="service">Servicios</SelectItem>
-                      <SelectItem value="sale">Ventas</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Estado</Label>
-                  <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos los estados" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los estados</SelectItem>
-                      <SelectItem value="completed">Completado</SelectItem>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                      <SelectItem value="cancelled">Cancelado</SelectItem>
-                      <SelectItem value="refunded">Reembolsado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
       </div>
 
-      {/* Lista de registros - Compacta para móvil */}
+      {/* Lista de registros */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
           <CardTitle className="text-white">Registros Contables ({filteredRecords.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 grid-cols-1 lg:grid-cols-1">
-            {filteredRecords.length === 0 ? (
-              <div className="text-center py-8 text-white/70">
-                <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No se encontraron registros con los filtros aplicados</p>
-              </div>
-            ) : (
-              filteredRecords.map((record) => (
+          {filteredRecords.length === 0 ? (
+            <div className="text-center py-8 text-white/70">
+              <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No se encontraron registros con los filtros aplicados</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+              {filteredRecords.map((record) => (
                 <Card key={record.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
-                  <CardContent className="p-3 lg:p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge
-                            variant="outline"
-                            className={
-                              record.type === "service"
-                                ? "bg-blue-500/20 text-blue-300 border-blue-400 text-xs"
-                                : "bg-purple-500/20 text-purple-300 border-purple-400 text-xs"
-                            }
-                          >
-                            {record.type === "service" ? (
-                              <>
-                                <Wrench className="w-3 h-3 mr-1" />
-                                Servicio
-                              </>
-                            ) : (
-                              <>
-                                <ShoppingBag className="w-3 h-3 mr-1" />
-                                Venta
-                              </>
-                            )}
-                          </Badge>
-                          {getStatusBadge(record.status)}
-                          <span className="text-xs text-white/70">
-                            {new Date(record.date).toLocaleDateString("es-AR")}
-                          </span>
-                        </div>
-
-                        <div className="grid gap-1 grid-cols-1 lg:grid-cols-2">
-                          <div>
-                            <span className="font-medium text-white text-sm">{record.client}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-green-400" />
-                            <span className="font-bold text-green-400 text-sm">{formatAmount(record.amount)}</span>
-                          </div>
-                        </div>
-
-                        <div className="text-xs text-white/70 line-clamp-1 lg:line-clamp-none">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex flex-col gap-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            record.type === "service"
+                              ? "bg-blue-500/20 text-blue-300 border-blue-400 text-xs"
+                              : "bg-purple-500/20 text-purple-300 border-purple-400 text-xs"
+                          }
+                        >
                           {record.type === "service" ? (
                             <>
-                              <strong>{(record as ServiceRecord).category}:</strong>{" "}
-                              {(record as ServiceRecord).description}
+                              <Wrench className="w-3 h-3 mr-1" />
+                              Servicio
                             </>
                           ) : (
                             <>
-                              <strong>{(record as SaleRecord).productName}</strong> - Cantidad:{" "}
-                              {(record as SaleRecord).quantity} × {formatAmount((record as SaleRecord).unitPrice)}
+                              <ShoppingBag className="w-3 h-3 mr-1" />
+                              Venta
                             </>
                           )}
+                        </Badge>
+                        {getStatusBadge(record.status)}
+                      </div>
+
+                      <div className="space-y-2">
+                        <span className="font-medium text-white text-sm truncate">{record.client}</span>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-green-400" />
+                          <span className="font-bold text-green-400 text-sm">{formatAmount(record.amount)}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 ml-2">
+                      <div className="text-xs text-white/70">
+                        {record.type === "service" ? (
+                          <p className="line-clamp-2">
+                            <strong>{(record as ServiceRecord).category}:</strong>{" "}
+                            {(record as ServiceRecord).description}
+                          </p>
+                        ) : (
+                          <p className="line-clamp-2">
+                            <strong>{(record as SaleRecord).productName}</strong> - Cantidad:{" "}
+                            {(record as SaleRecord).quantity} × {formatAmount((record as SaleRecord).unitPrice)}
+                          </p>
+                        )}
+                        <p className="mt-1">{new Date(record.date).toLocaleDateString("es-AR")}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="bg-white/10 border-white/20 text-white hover:bg-white/20 text-xs p-2"
-                              onClick={() => setEditingRecord(record)}
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex-1"
+                              onClick={() => setSelectedRecord(record)}
                             >
-                              <Edit className="h-3 w-3" />
+                              <Eye className="h-4 w-4 lg:mr-2" />
+                              <span className="hidden lg:inline">Ver</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="sm:max-w-md">
                             <DialogHeader>
-                              <DialogTitle>Editar Registro</DialogTitle>
-                              <DialogDescription>Modifica la información del registro</DialogDescription>
+                              <DialogTitle>Detalles del Registro</DialogTitle>
+                              <DialogDescription>Información completa del registro contable</DialogDescription>
                             </DialogHeader>
-                            {editingRecord && (
+                            {selectedRecord && (
                               <div className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div className="space-y-2">
-                                    <Label>Cliente</Label>
-                                    <Input
-                                      value={editingRecord.client}
-                                      onChange={(e) => setEditingRecord({ ...editingRecord, client: e.target.value })}
-                                    />
+                                <div className="grid gap-4 grid-cols-1">
+                                  <div>
+                                    <Label className="text-sm font-medium">Cliente</Label>
+                                    <p className="text-sm">{selectedRecord.client}</p>
                                   </div>
-                                  <div className="space-y-2">
-                                    <Label>Monto</Label>
-                                    <Input
-                                      type="number"
-                                      value={editingRecord.amount}
-                                      onChange={(e) =>
-                                        setEditingRecord({
-                                          ...editingRecord,
-                                          amount: Number.parseFloat(e.target.value) || 0,
-                                        })
-                                      }
-                                    />
+                                  <div>
+                                    <Label className="text-sm font-medium">Monto</Label>
+                                    <p className="text-sm font-bold text-green-600">
+                                      {formatAmount(selectedRecord.amount)}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Fecha</Label>
+                                    <p className="text-sm">
+                                      {new Date(selectedRecord.date).toLocaleDateString("es-AR")}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <Label className="text-sm font-medium">Estado</Label>
+                                    <div className="mt-1">{getStatusBadge(selectedRecord.status)}</div>
                                   </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                  <Label>Fecha</Label>
-                                  <Input
-                                    type="date"
-                                    value={editingRecord.date}
-                                    onChange={(e) => setEditingRecord({ ...editingRecord, date: e.target.value })}
-                                  />
-                                </div>
-
-                                {editingRecord.type === "service" && (
-                                  <div className="space-y-2">
-                                    <Label>Descripción</Label>
-                                    <Textarea
-                                      value={(editingRecord as ServiceRecord).description}
-                                      onChange={(e) =>
-                                        setEditingRecord({
-                                          ...editingRecord,
-                                          description: e.target.value,
-                                        } as ServiceRecord)
-                                      }
-                                    />
-                                  </div>
+                                {selectedRecord.type === "service" && (
+                                  <>
+                                    <div>
+                                      <Label className="text-sm font-medium">Categoría</Label>
+                                      <p className="text-sm">{(selectedRecord as ServiceRecord).category}</p>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm font-medium">Descripción</Label>
+                                      <p className="text-sm">{(selectedRecord as ServiceRecord).description}</p>
+                                    </div>
+                                  </>
                                 )}
 
-                                <div className="flex justify-end gap-2">
-                                  <Button variant="outline" onClick={() => setEditingRecord(null)}>
-                                    Cancelar
+                                {selectedRecord.type === "sale" && (
+                                  <>
+                                    <div>
+                                      <Label className="text-sm font-medium">Producto</Label>
+                                      <p className="text-sm">{(selectedRecord as SaleRecord).productName}</p>
+                                    </div>
+                                    <div className="grid gap-4 grid-cols-1">
+                                      <div>
+                                        <Label className="text-sm font-medium">Cantidad</Label>
+                                        <p className="text-sm">{(selectedRecord as SaleRecord).quantity}</p>
+                                      </div>
+                                      <div>
+                                        <Label className="text-sm font-medium">Precio Unitario</Label>
+                                        <p className="text-sm">
+                                          {formatAmount((selectedRecord as SaleRecord).unitPrice)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+
+                                <div className="flex gap-2 pt-4">
+                                  <Button
+                                    onClick={() => setEditingRecord(selectedRecord)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1"
+                                  >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar
                                   </Button>
-                                  <Button onClick={updateRecord}>Actualizar</Button>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => deleteRecord(selectedRecord.id)}
+                                    className="flex-1"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Eliminar
+                                  </Button>
                                 </div>
                               </div>
                             )}
                           </DialogContent>
                         </Dialog>
-
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => deleteRecord(record.id)}
-                          className="text-xs p-2"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingRecord} onOpenChange={() => setEditingRecord(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Registro</DialogTitle>
+            <DialogDescription>Modifica la información del registro</DialogDescription>
+          </DialogHeader>
+          {editingRecord && (
+            <div className="space-y-4">
+              <div className="grid gap-4 grid-cols-1">
+                <div className="space-y-2">
+                  <Label>Cliente</Label>
+                  <Input
+                    value={editingRecord.client}
+                    onChange={(e) => setEditingRecord({ ...editingRecord, client: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Monto</Label>
+                  <Input
+                    type="number"
+                    value={editingRecord.amount}
+                    onChange={(e) =>
+                      setEditingRecord({
+                        ...editingRecord,
+                        amount: Number.parseFloat(e.target.value) || 0,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Fecha</Label>
+                <Input
+                  type="date"
+                  value={editingRecord.date}
+                  onChange={(e) => setEditingRecord({ ...editingRecord, date: e.target.value })}
+                />
+              </div>
+
+              {editingRecord.type === "service" && (
+                <div className="space-y-2">
+                  <Label>Descripción</Label>
+                  <Textarea
+                    value={(editingRecord as ServiceRecord).description}
+                    onChange={(e) =>
+                      setEditingRecord({
+                        ...editingRecord,
+                        description: e.target.value,
+                      } as ServiceRecord)
+                    }
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditingRecord(null)}>
+                  Cancelar
+                </Button>
+                <Button onClick={updateRecord}>Actualizar</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

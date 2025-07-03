@@ -1,6 +1,7 @@
 import { signInWithPopup, GoogleAuthProvider, signOut as firebaseSignOut, type User } from "firebase/auth"
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"
+import { doc, setDoc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore"
 import { auth, db } from "./firebase"
+import { perfilService } from "./firebase-services"
 
 const googleProvider = new GoogleAuthProvider()
 
@@ -19,11 +20,13 @@ export const signInWithGoogle = async () => {
       email: user.email,
       photoURL: user.photoURL,
       role: userDoc?.role || "usuario",
+      isProfileComplete: userDoc?.isProfileComplete || false,
+      isNewUser: userDoc?.isNewUser || false,
     }
 
     localStorage.setItem("servitec_user", JSON.stringify(userData))
 
-    return user
+    return { user, userDoc }
   } catch (error) {
     console.error("Error signing in with Google:", error)
     throw error
@@ -47,6 +50,7 @@ export const createUserDocument = async (user: User, additionalData = {}) => {
         role: email === "admin@servitec.com" ? "administrador" : "usuario",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+        isProfileComplete: false, // New field to track profile completion
         ...additionalData,
       })
 
@@ -55,6 +59,8 @@ export const createUserDocument = async (user: User, additionalData = {}) => {
         email,
         photoURL,
         role: email === "admin@servitec.com" ? "administrador" : "usuario",
+        isProfileComplete: false,
+        isNewUser: true, // Flag to indicate this is a new user
         ...additionalData,
       }
     } catch (error) {
@@ -62,7 +68,11 @@ export const createUserDocument = async (user: User, additionalData = {}) => {
       throw error
     }
   } else {
-    return userSnap.data()
+    const userData = userSnap.data()
+    return {
+      ...userData,
+      isNewUser: false, // Existing user
+    }
   }
 }
 
@@ -121,5 +131,51 @@ export const syncAuthState = (user: User | null) => {
 
     // Disparar evento para actualizar navbar
     window.dispatchEvent(new CustomEvent("userUpdated"))
+  }
+}
+
+export const completeUserProfile = async (
+  userId: string,
+  profileData: { name: string; phone: string; address?: string },
+) => {
+  try {
+    console.log("🔄 Completing user profile:", { userId, profileData })
+
+    // Get user email from localStorage
+    const currentUser = JSON.parse(localStorage.getItem("servitec_user") || "{}")
+    const userEmail = currentUser.email || ""
+
+    // Update usuario collection
+    const userRef = doc(db, "usuario", userId)
+    await updateDoc(userRef, {
+      name: profileData.name,
+      phone: profileData.phone,
+      address: profileData.address || "",
+      isProfileComplete: true,
+      updatedAt: serverTimestamp(),
+    })
+
+    // Create/update perfil collection
+    await perfilService.updateProfile(userId, {
+      name: profileData.name,
+      phone: profileData.phone,
+      address: profileData.address || "",
+      email: userEmail,
+    })
+
+    // Update localStorage
+    const updatedUser = {
+      ...currentUser,
+      name: profileData.name,
+      phone: profileData.phone,
+      address: profileData.address || "",
+      isProfileComplete: true,
+    }
+    localStorage.setItem("servitec_user", JSON.stringify(updatedUser))
+
+    console.log("✅ User profile completed successfully")
+  } catch (error) {
+    console.error("❌ Error completing user profile:", error)
+    throw error
   }
 }

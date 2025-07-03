@@ -27,11 +27,10 @@ import {
   Eye,
   UserCheck,
   UserX,
-  Plus,
-  RefreshCw,
   ChevronDown,
   ChevronRight,
-  Filter,
+  Phone,
+  MapPin,
 } from "lucide-react"
 import { usuarioService, type Usuario } from "@/lib/firebase-services"
 import { collection, getDocs } from "firebase/firestore"
@@ -42,13 +41,11 @@ export default function AdminUsers() {
   const [filteredUsers, setFilteredUsers] = useState<Usuario[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterRole, setFilterRole] = useState<string>("all")
-  const [filterStatus, setFilterStatus] = useState<string>("all")
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
   const [showDashboard, setShowDashboard] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const { toast } = useToast()
 
@@ -65,7 +62,7 @@ export default function AdminUsers() {
 
   useEffect(() => {
     filterUsers()
-  }, [users, searchTerm, filterRole, filterStatus])
+  }, [users, searchTerm, filterRole])
 
   const loadUsers = async () => {
     try {
@@ -111,10 +108,6 @@ export default function AdminUsers() {
 
     if (filterRole !== "all") {
       filtered = filtered.filter((user) => user.role === filterRole)
-    }
-
-    if (filterStatus !== "all") {
-      filtered = filtered.filter((user) => (filterStatus === "active" ? user.isActive : !user.isActive))
     }
 
     filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -204,17 +197,11 @@ export default function AdminUsers() {
     setIsDialogOpen(true)
   }
 
-  const openCreateDialog = () => {
-    setEditingUser(null)
-    setFormData({ name: "", email: "", phone: "", role: "usuario" })
-    setIsDialogOpen(true)
-  }
-
   const getRoleColor = (role: string) => {
     switch (role) {
       case "administrador":
       case "admin":
-        return "bg-red-500/20 text-red-200 border-red-500/30"
+        return "bg-orange-500/20 text-orange-300 border-orange-500/30"
       case "manager":
         return "bg-blue-500/20 text-blue-200 border-blue-500/30"
       case "usuario":
@@ -264,20 +251,6 @@ export default function AdminUsers() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-white">Usuarios</h2>
           <p className="text-white/70">Gestiona los usuarios del sistema</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button onClick={loadUsers} variant="ghost" className="text-white hover:bg-white/10" size="sm">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Actualizar
-          </Button>
-          <Button
-            onClick={openCreateDialog}
-            className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-            size="sm"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nuevo Usuario
-          </Button>
         </div>
       </div>
 
@@ -335,62 +308,42 @@ export default function AdminUsers() {
         )}
       </Card>
 
-      {/* Filtros en modal */}
-      <div className="flex justify-end">
-        <Dialog open={showFilters} onOpenChange={setShowFilters}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Filtros de Búsqueda</DialogTitle>
-              <DialogDescription>Filtra los usuarios del sistema</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <Label htmlFor="search">Buscar</Label>
-                <Input
-                  id="search"
-                  placeholder="Nombre, email, teléfono..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Rol</Label>
-                <Select value={filterRole} onValueChange={setFilterRole}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los roles" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los roles</SelectItem>
-                    <SelectItem value="usuario">Usuario</SelectItem>
-                    <SelectItem value="administrador">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los estados" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="active">Activos</SelectItem>
-                    <SelectItem value="inactive">Inactivos</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Filtros */}
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-white">
+                Buscar
+              </Label>
+              <Input
+                id="search"
+                placeholder="Nombre, email, teléfono..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+
+            <div className="space-y-2">
+              <Label className="text-white">Rol</Label>
+              <Select value={filterRole} onValueChange={setFilterRole}>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Todos los roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los roles</SelectItem>
+                  <SelectItem value="usuario">Usuario</SelectItem>
+                  <SelectItem value="administrador">Administrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Lista de usuarios */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
@@ -399,55 +352,56 @@ export default function AdminUsers() {
         </CardHeader>
         <CardContent>
           {filteredUsers.length > 0 ? (
-            <div className="space-y-4">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
               {filteredUsers.map((user) => (
                 <Card
                   key={user.id}
                   className="bg-white/5 backdrop-blur-sm border-white/10 hover:bg-white/10 transition-all duration-300"
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 flex-1 min-w-0">
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
-                            {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h3 className="font-semibold text-white truncate">{user.name}</h3>
-                            <Badge className={getRoleColor(user.role)}>{getRoleText(user.role)}</Badge>
-                            <Badge className={user.isActive ? "bg-green-500" : "bg-red-500"}>
-                              {user.isActive ? "Activo" : "Inactivo"}
-                            </Badge>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col items-center text-center space-y-3">
+                      <Avatar className="w-16 h-16">
+                        <AvatarImage src={user.photoURL || user.avatar || "/placeholder.svg"} alt={user.name} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white">
+                          {user.name?.charAt(0) || user.email?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      <div className="space-y-2 w-full">
+                        <h3 className="font-semibold text-white text-sm truncate">{user.name}</h3>
+
+                        <div className="flex flex-col gap-1">
+                          <Badge className={getRoleColor(user.role)} size="sm">
+                            {getRoleText(user.role)}
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-1 text-xs text-white/70">
+                          <div className="flex items-center justify-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            <span className="truncate">{user.email}</span>
                           </div>
-                          <div className="space-y-1">
-                            <div className="flex items-center space-x-2 text-sm text-white/70">
-                              <Mail className="h-4 w-4" />
-                              <span className="truncate">{user.email}</span>
-                            </div>
-                            <div className="flex items-center space-x-2 text-sm text-white/70">
-                              <Calendar className="h-4 w-4" />
-                              <span>{new Date(user.createdAt).toLocaleDateString()}</span>
-                            </div>
+                          <div className="flex items-center justify-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>{new Date(user.createdAt).toLocaleDateString()}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2 ml-4">
+                      <div className="flex items-center gap-2 w-full">
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => setSelectedUser(user)}
-                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                              className="bg-white/10 border-white/20 text-white hover:bg-white/20 flex-1"
                             >
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-4 w-4 lg:mr-2" />
+                              <span className="hidden lg:inline">Ver</span>
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="sm:max-w-md">
                             <DialogHeader>
                               <DialogTitle>Detalles del Usuario</DialogTitle>
                             </DialogHeader>
@@ -456,7 +410,7 @@ export default function AdminUsers() {
                                 <div className="flex items-center gap-4">
                                   <Avatar className="h-16 w-16">
                                     <AvatarImage
-                                      src={selectedUser.avatar || "/placeholder.svg"}
+                                      src={selectedUser.photoURL || selectedUser.avatar || "/placeholder.svg"}
                                       alt={selectedUser.name}
                                     />
                                     <AvatarFallback className="bg-gradient-to-br from-blue-400 to-purple-500 text-white text-lg">
@@ -469,50 +423,82 @@ export default function AdminUsers() {
                                       <Badge className={getRoleColor(selectedUser.role)}>
                                         {getRoleText(selectedUser.role)}
                                       </Badge>
-                                      <Badge className={selectedUser.isActive ? "bg-green-500" : "bg-red-500"}>
-                                        {selectedUser.isActive ? "Activo" : "Inactivo"}
-                                      </Badge>
                                     </div>
                                   </div>
                                 </div>
 
-                                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+                                <div className="grid gap-4 grid-cols-1">
                                   <div>
-                                    <Label className="text-sm font-medium">Email</Label>
+                                    <Label className="text-sm font-medium flex items-center gap-2">
+                                      <Mail className="h-4 w-4" />
+                                      Email
+                                    </Label>
                                     <p className="text-sm">{selectedUser.email}</p>
                                   </div>
                                   {selectedUser.phone && (
                                     <div>
-                                      <Label className="text-sm font-medium">Teléfono</Label>
+                                      <Label className="text-sm font-medium flex items-center gap-2">
+                                        <Phone className="h-4 w-4" />
+                                        Teléfono
+                                      </Label>
                                       <p className="text-sm">{selectedUser.phone}</p>
                                     </div>
                                   )}
+                                  {selectedUser.address && (
+                                    <div>
+                                      <Label className="text-sm font-medium flex items-center gap-2">
+                                        <MapPin className="h-4 w-4" />
+                                        Dirección
+                                      </Label>
+                                      <p className="text-sm">{selectedUser.address}</p>
+                                    </div>
+                                  )}
                                   <div>
-                                    <Label className="text-sm font-medium">Fecha de registro</Label>
+                                    <Label className="text-sm font-medium flex items-center gap-2">
+                                      <Calendar className="h-4 w-4" />
+                                      Fecha de registro
+                                    </Label>
                                     <p className="text-sm">{new Date(selectedUser.createdAt).toLocaleDateString()}</p>
                                   </div>
+                                </div>
+
+                                <div className="flex gap-2 pt-4">
+                                  <Button
+                                    onClick={() => openEditDialog(selectedUser)}
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex-1"
+                                  >
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar
+                                  </Button>
+
+                                  <Button
+                                    onClick={() => updateUserStatus(selectedUser.id!, !selectedUser.isActive)}
+                                    size="sm"
+                                    className={
+                                      selectedUser.isActive
+                                        ? "bg-red-500 hover:bg-red-600 flex-1"
+                                        : "bg-green-500 hover:bg-green-600 flex-1"
+                                    }
+                                  >
+                                    {selectedUser.isActive ? (
+                                      <>
+                                        <UserX className="h-4 w-4 mr-2" />
+                                        Desactivar
+                                      </>
+                                    ) : (
+                                      <>
+                                        <UserCheck className="h-4 w-4 mr-2" />
+                                        Activar
+                                      </>
+                                    )}
+                                  </Button>
                                 </div>
                               </div>
                             )}
                           </DialogContent>
                         </Dialog>
-
-                        <Button
-                          onClick={() => openEditDialog(user)}
-                          size="sm"
-                          variant="outline"
-                          className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-
-                        <Button
-                          onClick={() => updateUserStatus(user.id!, !user.isActive)}
-                          size="sm"
-                          className={user.isActive ? "bg-red-500 hover:bg-red-600" : "bg-green-500 hover:bg-green-600"}
-                        >
-                          {user.isActive ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -528,12 +514,6 @@ export default function AdminUsers() {
                   ? "No se encontraron usuarios con el término de búsqueda"
                   : "Aún no hay usuarios registrados en el sistema"}
               </p>
-              {!searchTerm && (
-                <Button onClick={openCreateDialog} className="mt-4 bg-transparent" variant="outline">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Crear primer usuario
-                </Button>
-              )}
             </div>
           )}
         </CardContent>

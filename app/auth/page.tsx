@@ -42,23 +42,29 @@ export default function AuthPage() {
     setLoading(true)
     try {
       console.log("🚀 Starting Google sign in...")
-      const user = await signInWithGoogle()
-      console.log("✅ Sign in successful:", user.email)
+      const { user, userDoc } = await signInWithGoogle()
+      console.log("✅ Sign in successful:", user.email, "New user:", userDoc?.isNewUser)
 
       toast({
         title: "¡Bienvenido!",
-        description: "Has iniciado sesión correctamente.",
+        description: userDoc?.isNewUser ? "Completa tu perfil para continuar." : "Has iniciado sesión correctamente.",
       })
 
       // Esperar un momento para que se actualice el estado
       setTimeout(() => {
-        // Redirect based on user role
-        if (user.email === "admin@servitec.com") {
-          console.log("🛡️ Admin user, redirecting to admin...")
-          router.push("/admin")
+        // Check if user needs to complete profile
+        if (userDoc?.isNewUser || !userDoc?.isProfileComplete) {
+          console.log("👤 New user or incomplete profile, redirecting to complete profile...")
+          router.push("/completar-perfil")
         } else {
-          console.log("👤 Regular user, redirecting to home...")
-          router.push("/")
+          // Redirect based on user role
+          if (user.email === "admin@servitec.com") {
+            console.log("🛡️ Admin user, redirecting to admin...")
+            router.push("/admin")
+          } else {
+            console.log("👤 Regular user, redirecting to home...")
+            router.push("/")
+          }
         }
       }, 1000)
     } catch (error: any) {

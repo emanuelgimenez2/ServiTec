@@ -23,7 +23,8 @@ import {
   Trash2,
   ChevronDown,
   ChevronRight,
-  Filter,
+  Eye,
+  Phone,
 } from "lucide-react"
 import { pedidosService } from "@/lib/firebase-services"
 
@@ -56,10 +57,8 @@ export default function AdminOrders() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [showDashboard, setShowDashboard] = useState(false)
-  const [showFilters, setShowFilters] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -135,35 +134,6 @@ export default function AdminOrders() {
       toast({
         title: "Estado actualizado",
         description: `Pedido ${newStatus === "processing" ? "en proceso" : newStatus === "shipped" ? "enviado" : newStatus === "delivered" ? "entregado" : "cancelado"}`,
-      })
-    }
-  }
-
-  const updateOrder = async () => {
-    if (!editingOrder) return
-
-    try {
-      await pedidosService.updateOrder(editingOrder.id, editingOrder)
-      await loadOrders()
-
-      setEditingOrder(null)
-      toast({
-        title: "Pedido actualizado",
-        description: "El pedido ha sido actualizado exitosamente",
-      })
-    } catch (error) {
-      console.error("Error updating order:", error)
-      // Fallback a localStorage
-      const updatedOrders = orders.map((order) =>
-        order.id === editingOrder.id ? { ...editingOrder, updatedAt: new Date().toISOString() } : order,
-      )
-      setOrders(updatedOrders)
-      localStorage.setItem("admin_orders", JSON.stringify(updatedOrders))
-
-      setEditingOrder(null)
-      toast({
-        title: "Pedido actualizado",
-        description: "El pedido ha sido actualizado exitosamente",
       })
     }
   }
@@ -349,51 +319,45 @@ export default function AdminOrders() {
         )}
       </Card>
 
-      {/* Filtros en modal */}
-      <div className="flex justify-end">
-        <Dialog open={showFilters} onOpenChange={setShowFilters}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              <Filter className="h-4 w-4 mr-2" />
-              Filtros
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Filtros de Búsqueda</DialogTitle>
-              <DialogDescription>Filtra los pedidos de la tienda</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="search">Buscar</Label>
-                <Input
-                  id="search"
-                  placeholder="ID, nombre, email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Estado</Label>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los estados" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="pending">Pendiente</SelectItem>
-                    <SelectItem value="processing">Procesando</SelectItem>
-                    <SelectItem value="shipped">Enviado</SelectItem>
-                    <SelectItem value="delivered">Entregado</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Filtros */}
+      <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <CardHeader>
+          <CardTitle className="text-white">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-white">
+                Buscar
+              </Label>
+              <Input
+                id="search"
+                placeholder="ID, nombre, email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+
+            <div className="space-y-2">
+              <Label className="text-white">Estado</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                  <SelectValue placeholder="Todos los estados" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los estados</SelectItem>
+                  <SelectItem value="pending">Pendiente</SelectItem>
+                  <SelectItem value="processing">Procesando</SelectItem>
+                  <SelectItem value="shipped">Enviado</SelectItem>
+                  <SelectItem value="delivered">Entregado</SelectItem>
+                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Lista de pedidos */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
@@ -407,154 +371,163 @@ export default function AdminOrders() {
               <p>No se encontraron pedidos con los filtros aplicados</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
               {filteredOrders.map((order) => (
                 <Card key={order.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {getStatusBadge(order.status)}
-                          <Badge variant="outline" className="text-white/80 border-white/30">
-                            #{order.id?.slice(-8) || "N/A"}
-                          </Badge>
-                          <span className="text-sm text-white/70">{formatDate(order.createdAt)}</span>
-                        </div>
-
-                        {/* Update here */}
-                        <div className="grid gap-1 grid-cols-1 sm:grid-cols-2">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-white/70" />
-                            <span className="font-medium text-white text-sm">{order.userName || "Usuario"}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-white/70" />
-                            <span className="font-bold text-green-400 text-sm">{formatPrice(order.total || 0)}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-white/70">
-                          {order.items?.length || 0} producto{(order.items?.length || 0) !== 1 ? "s" : ""} •{" "}
-                          {order.paymentMethod || "N/A"}
-                        </p>
+                  <CardContent className="p-4">
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex flex-col gap-2">
+                        {getStatusBadge(order.status)}
+                        <Badge variant="outline" className="text-white/80 border-white/30 text-xs">
+                          #{order.id?.slice(-8) || "N/A"}
+                        </Badge>
                       </div>
 
-                      <div className="flex items-center gap-2 ml-4">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedOrder(order)}
-                              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                            >
-                              Ver Detalles
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Pedido #{selectedOrder?.id?.slice(-8) || "N/A"}</DialogTitle>
-                              <DialogDescription>Detalles completos del pedido</DialogDescription>
-                            </DialogHeader>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-white/70" />
+                          <span className="font-medium text-white text-sm truncate">{order.userName || "Usuario"}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-white/70" />
+                          <span className="text-white text-xs truncate">{order.userPhone || "N/A"}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-white/70" />
+                          <span className="font-bold text-green-400 text-sm">{formatPrice(order.total || 0)}</span>
+                        </div>
+                      </div>
 
-                            {selectedOrder && (
-                              <div className="space-y-4">
-                                <div className="grid gap-4 md:grid-cols-2">
-                                  <div>
-                                    <Label className="text-sm font-medium">Cliente</Label>
-                                    <p className="text-sm">{selectedOrder.userName || "N/A"}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Email</Label>
-                                    <p className="text-sm">{selectedOrder.userEmail || "N/A"}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Teléfono</Label>
-                                    <p className="text-sm">{selectedOrder.userPhone || "N/A"}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Estado</Label>
-                                    <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
-                                  </div>
-                                </div>
+                      <div className="text-xs text-white/70">
+                        <p>
+                          {order.items?.length || 0} producto{(order.items?.length || 0) !== 1 ? "s" : ""}
+                        </p>
+                        <p>{formatDate(order.createdAt)}</p>
+                      </div>
 
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedOrder(order)}
+                            className="bg-white/10 border-white/20 text-white hover:bg-white/20 w-full"
+                          >
+                            <Eye className="h-4 w-4 lg:mr-2" />
+                            <span className="hidden lg:inline">Ver</span>
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Pedido #{selectedOrder?.id?.slice(-8) || "N/A"}</DialogTitle>
+                            <DialogDescription>Detalles completos del pedido</DialogDescription>
+                          </DialogHeader>
+
+                          {selectedOrder && (
+                            <div className="space-y-4">
+                              <div className="grid gap-4 grid-cols-1">
                                 <div>
-                                  <Label className="text-sm font-medium">Dirección de envío</Label>
-                                  <p className="text-sm">{selectedOrder.shippingAddress || "N/A"}</p>
+                                  <Label className="text-sm font-medium">Cliente</Label>
+                                  <p className="text-sm">{selectedOrder.userName || "N/A"}</p>
                                 </div>
-
                                 <div>
-                                  <Label className="text-sm font-medium">Productos</Label>
-                                  <div className="mt-2 space-y-2">
-                                    {selectedOrder.items?.map((item) => (
-                                      <div
-                                        key={item.id}
-                                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                                      >
-                                        <div className="flex items-center gap-2">
-                                          <img
-                                            src={item.image || "/placeholder.svg"}
-                                            alt={item.name}
-                                            className="w-10 h-10 object-cover rounded"
-                                          />
-                                          <div>
-                                            <p className="text-sm font-medium">{item.name}</p>
-                                            <p className="text-xs text-muted-foreground">Cantidad: {item.quantity}</p>
-                                          </div>
-                                        </div>
-                                        <p className="text-sm font-bold">
-                                          {formatPrice((item.price || 0) * (item.quantity || 0))}
-                                        </p>
-                                      </div>
-                                    )) || <p className="text-sm text-gray-500">No hay productos</p>}
-                                  </div>
+                                  <Label className="text-sm font-medium">Email</Label>
+                                  <p className="text-sm">{selectedOrder.userEmail || "N/A"}</p>
                                 </div>
-
-                                <div className="flex justify-between items-center pt-2 border-t">
-                                  <span className="font-medium">Total:</span>
-                                  <span className="text-lg font-bold text-green-600">
-                                    {formatPrice(selectedOrder.total || 0)}
-                                  </span>
+                                <div>
+                                  <Label className="text-sm font-medium">Teléfono</Label>
+                                  <p className="text-sm">{selectedOrder.userPhone || "N/A"}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-sm font-medium">Estado</Label>
+                                  <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
                                 </div>
                               </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
 
-                        {order.status === "pending" && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, "processing")}
-                            className="bg-blue-500 hover:bg-blue-600"
-                          >
-                            Procesar
-                          </Button>
-                        )}
+                              <div>
+                                <Label className="text-sm font-medium">Dirección de envío</Label>
+                                <p className="text-sm">{selectedOrder.shippingAddress || "N/A"}</p>
+                              </div>
 
-                        {order.status === "processing" && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, "shipped")}
-                            className="bg-orange-500 hover:bg-orange-600"
-                          >
-                            Enviar
-                          </Button>
-                        )}
+                              <div>
+                                <Label className="text-sm font-medium">Productos</Label>
+                                <div className="mt-2 space-y-2">
+                                  {selectedOrder.items?.map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <img
+                                          src={item.image || "/placeholder.svg"}
+                                          alt={item.name}
+                                          className="w-10 h-10 object-cover rounded"
+                                        />
+                                        <div>
+                                          <p className="text-sm font-medium">{item.name}</p>
+                                          <p className="text-xs text-muted-foreground">Cantidad: {item.quantity}</p>
+                                        </div>
+                                      </div>
+                                      <p className="text-sm font-bold">
+                                        {formatPrice((item.price || 0) * (item.quantity || 0))}
+                                      </p>
+                                    </div>
+                                  )) || <p className="text-sm text-gray-500">No hay productos</p>}
+                                </div>
+                              </div>
 
-                        {order.status === "shipped" && (
-                          <Button
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, "delivered")}
-                            className="bg-green-500 hover:bg-green-600"
-                          >
-                            Entregar
-                          </Button>
-                        )}
+                              <div className="flex justify-between items-center pt-2 border-t">
+                                <span className="font-medium">Total:</span>
+                                <span className="text-lg font-bold text-green-600">
+                                  {formatPrice(selectedOrder.total || 0)}
+                                </span>
+                              </div>
 
-                        <Button size="sm" variant="destructive" onClick={() => deleteOrder(order.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                              {/* Botones de acción dentro del modal */}
+                              <div className="flex gap-2 pt-4 border-t">
+                                {selectedOrder.status === "pending" && (
+                                  <Button
+                                    onClick={() => updateOrderStatus(selectedOrder.id, "processing")}
+                                    className="bg-blue-500 hover:bg-blue-600 flex-1"
+                                  >
+                                    <Package className="h-4 w-4 mr-2" />
+                                    Procesar
+                                  </Button>
+                                )}
+
+                                {selectedOrder.status === "processing" && (
+                                  <Button
+                                    onClick={() => updateOrderStatus(selectedOrder.id, "shipped")}
+                                    className="bg-orange-500 hover:bg-orange-600 flex-1"
+                                  >
+                                    <Truck className="h-4 w-4 mr-2" />
+                                    Enviar
+                                  </Button>
+                                )}
+
+                                {selectedOrder.status === "shipped" && (
+                                  <Button
+                                    onClick={() => updateOrderStatus(selectedOrder.id, "delivered")}
+                                    className="bg-green-500 hover:bg-green-600 flex-1"
+                                  >
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Entregar
+                                  </Button>
+                                )}
+
+                                <Button
+                                  variant="destructive"
+                                  onClick={() => deleteOrder(selectedOrder.id)}
+                                  className="flex-1"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Eliminar
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </CardContent>
                 </Card>
